@@ -2,7 +2,7 @@ from starlette.applications import Starlette
 from starlette_admin import I18nConfig
 from starlette_admin.contrib.sqlmodel import Admin
 
-from config.engine import engine, init_db
+from configs.engine import engine, init_db
 
 app = Starlette(on_startup=[init_db])
 
