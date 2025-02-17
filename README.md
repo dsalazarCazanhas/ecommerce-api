@@ -49,10 +49,10 @@ This project is a Python-based E-commerce API designed to handle user authentica
 - Enhanced admin panel features.
 
 ## License
-[!INFO]
+>[!NOTE]
 This project is licensed under the [MIT License](./LICENSE).
 
-### [!WARNING]
+>[!WARNING]
 Debug is activated on the [app definition](./app.py) and the [database](./configs/engine.py)
 
 ---
