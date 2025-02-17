@@ -1,0 +1,126 @@
+{% extends "layout.html" %}
+{% block header %}
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>{{ model.label }}</h1>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for(__name__ ~ ':index') }}">{{ _("Admin") }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for(__name__ ~ ':list', identity=model.identity) }}">{{ model.label }}</a>
+            </li>
+            <li class="breadcrumb-item active">{{ _("Create") }}</li>
+        </ol>
+    </div>
+{% endblock %}
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <form action="{{ request.url | safe }}" method="POST" enctype="multipart/form-data">
+                        <div class="card-header">
+                            <div class="container-fluid">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title">{{ _("New %(name)s", name=model.name ) }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body border-bottom py-3">
+                            {% block create_form %}
+                                {% for field in model.get_fields_list(request, 'CREATE' | ra) %}
+                                        <div class="mb-3">
+                                            {% with action=('CREATE'|ra), data=(None if not obj else obj[field.name]), error=errors.get(field.name, None) if errors else None %}
+                                                {% include field.label_template %}
+                                                {% include field.form_template %}
+                                            {% endwith %}
+                                        </div>
+                                        <div id="dynamic-fields-container"></div>
+                                {% endfor %}
+                            {% endblock %}
+                        {% if model.label == "Scrapping Strategy" %}
+                            <form action="{{ request.url | safe }}" method="POST" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="upload_json" class="form-label required">{{ _("Upload JSON") }}</label>
+                                    <input type="file" class="field-string form-control" id="upload_json" name="upload_json" accept="json" required>
+                                </div>
+                        {% endif %}
+                        </div>
+                        <div class="card-footer text-black">
+                            <div class="btn-list ms-auto justify-content-end">
+                                {% if model.label == "Scrapping Strategy" %}
+                                    <button type="button" onclick="addSettingField()" class="btn">{{ _("Add a setting field") }}</button>
+                                {% endif %}
+                                <a href="{{ url_for(__name__ ~ ':list', identity=model.identity) }}"
+                                   class="btn btn-danger">{{ _("Cancel") }}</a>
+                                <button type="submit" name="_add_another"
+                                        class="btn">{{ _("Save and add another") }}</button>
+                                <button type="submit" name="_continue_editing"
+                                        class="btn">{{ _("Save and continue editing") }}</button>
+                                <button type="submit" class="btn btn-success">{{ _("Save") }}</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block head_css %}
+    {{ super() }}
+    {% for link in model._additional_css_links(request, "CREATE" | ra) %}
+        <link rel="stylesheet" href="{{ link }}">
+    {% endfor %}
+    <style>
+        .is-invalid .select2-selection {
+            border-color: #d63939 !important;
+        }
+    </style>
+{% endblock %}
+{% block script %}
+    {{ super() }}
+    <script type="text/javascript" src="{{ url_for(__name__ ~ ':statics', path='js/form.js') }}"></script>
+    {% for link in model._additional_js_links(request, "CREATE" | ra) %}
+        <script type="text/javascript" src="{{ link }}"></script>
+    <script>
+        function addSettingField() {
+            const fieldContainer = document.getElementById('dynamic-fields-container');
+            const newFieldIndex = fieldContainer.children.length;
+            if (newFieldIndex >= 5) {
+                alert("Maximum number of fields reached");
+                return;
+            }            
+            const newField = document.createElement('div');
+            newField.className = 'mb-3';
+            newField.innerHTML = `
+                <div class="form-group">
+                    <label for="setting_${newFieldIndex}">{{ _("Setting") }} ${newFieldIndex + 1}</label>
+                    <input type="text" class="form-control" id="setting_${newFieldIndex}" name="dynamic_setting_${newFieldIndex}" required>
+                </div>
+                `;
+            
+            fieldContainer.appendChild(newField);
+        }
+    </script>
+    <script>
+        document.querySelector('form').addEventListener('submit', function (event) {
+            const fileInput = document.getElementById('upload_json');
+            const file = fileInput.files[0];
+    
+            // Validate file extension
+            if (!file.name.endsWith('.json')) {
+                alert("Invalid file type. Please upload a JSON file.");
+                event.preventDefault();
+                return;
+            }
+    
+            // Optional: Validate MIME type
+            if (file.type !== "application/json") {
+                alert("Invalid MIME type. Please upload a valid JSON file.");
+                event.preventDefault();
+                return;
+            }
+        });
+    </script>    
+    {% endfor %}
+{% endblock %}

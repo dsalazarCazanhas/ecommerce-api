@@ -52,6 +52,9 @@ This project is a Python-based E-commerce API designed to handle user authentica
 [!INFO]
 This project is licensed under the [MIT License](./LICENSE).
 
+### [!WARNING]
+Debug is activated on the [app definition](./app.py) and the [database](./configs/engine.py)
+
 ---
 
 *Built with ❤️ using Python and [Starlette-admin](https://github.com/jowilf/starlette-admin).*
