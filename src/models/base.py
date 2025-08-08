@@ -1,22 +1,29 @@
 from pydantic import UUID4
+from typing import Optional
 from sqlmodel import Field, SQLModel
+from datetime import datetime
 import uuid
 
 
 """
-UUIDs Prevent Information Leakage
-Because UUIDs version 4 are random, you could give these IDs to the application users or to other systems, 
-without exposing information about your application.
+Los UUIDs previenen la filtración de información.
+Debido a que los UUIDs versión 4 son aleatorios, puedes asignar estos IDs a los usuarios de la aplicación o a otros sistemas sin exponer información sobre tu aplicación.
 
-When using auto-incremented integers for primary keys, you could implicitly expose information about your system.
-For example, someone could create a new hero, and by getting the hero ID 20 they would know that you have 
-20 heroes in your system (or even less, if some heroes were already deleted).
+Al usar enteros auto-incrementales como claves primarias, podrías exponer implícitamente información sobre tu sistema.
+Por ejemplo, alguien podría crear un nuevo héroe y, al obtener el ID de héroe 20, sabría que tienes 20 héroes en tu sistema (o incluso menos, si algunos héroes ya fueron eliminados).
 
-There's still a chance you could have a collision, but it's very low. 
-In most cases you could assume you wouldn't have it, but it would be good to be prepared for it.
+Aún existe una pequeña posibilidad de colisión, pero es muy baja.
+En la mayoría de los casos puedes asumir que no ocurrirá, pero sería bueno estar preparado para ello.
 """
-class IdTable(SQLModel):
-    """
-    Base table class that provides a UUID primary key field.
-    """
-    id: UUID4 = Field(default_factory=uuid.uuid4, primary_key=True, nullable=False, unique=True)
+class BaseModel(SQLModel):
+    """Modelo base con campos comunes"""
+    id: Optional[UUID4] = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        index=True
+    )
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default=None)
+    
+    class Config:
+        from_attributes = True

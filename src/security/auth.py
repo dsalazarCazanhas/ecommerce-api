@@ -1,111 +1,111 @@
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import RedirectResponse
-from starlette_admin.auth import AuthProvider
-from starlette_admin.exceptions import LoginFailed
-from starlette.routing import Request, Response
-from sqlalchemy.exc import DBAPIError
-import time
+# src/security/auth.py
+from datetime import datetime
+from typing import Optional
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlmodel import Session, select
+from jose import JWTError, jwt
 
-from utils.funcdb import get_user_by_username
-from security.creds import verify_password
+from src.config.engine import get_session
+from src.config.ext import settings
+from src.models.users import User
 
-class AuthRequiredMiddleware(BaseHTTPMiddleware):
+# Esquema OAuth2 - FastAPI automáticamente agregará el botón "Authorize" en docs
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+
+def verify_token(token: str) -> Optional[dict]:
     """
-    Middleware to require authentication for specific paths.
-    If the user is not authenticated, redirect them to the login page.
+    Verificar y decodificar JWT token
+    Retorna el payload si es válido, None si no
     """
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=["HS256"]
+        )
+        return payload
+    except JWTError:
+        return None
 
-    def __init__(self, app, login_path, protected_paths=None):
-        super().__init__(app)
-        self.login_path = login_path
-        self.protected_paths = protected_paths or ["/admin", "/admin/*", "/", "/*"]
-
-    async def dispatch(self, request: Request, call_next):
-        return await call_next(request)
+def get_current_user(
+    request: Request,
+    session: Session = Depends(get_session)
+) -> User:
+    """
+    Dependencia para obtener el usuario actual desde el JWT token en la cookie
+    Se usa en endpoints que requieren autenticación
+    """
     
-class CustomAuthProvider(AuthProvider):
-    async def login(
-        self,
-        username: str,
-        password: str,
-        remember_me: bool,
-        request: Request,
-        response: Response,
-    ) -> Response:
-        token = request.headers.get('Authorization')
-        if not token:
-            try:
-                user = get_user_by_username(username)
-                if user & verify_password(plain_password=password, stored_password=user.password):
-                    # Store the username or relevant token data in the session
-                    now = time.time()
-                    request.session.update({'username': username,
-                                    'refresh_token': enc_refresh_token,
-                                    'access_token': token_data['access_token'],
-                                    'expires_in': token_data['expires_in']+now,
-                                    'refresh_expires_in': token_data['refresh_expires_in']+now
-                                    })
-                    # Check for 'next' parameter in the request, or redirect to the default page
-                    next_url = request.query_params.get('next', '/')
-                    response = RedirectResponse(url=next_url, status_code=303)
-            except (DBAPIError) as exc:
-                raise LoginFailed(exc.error_message)
-        if token_data:
-            enc_refresh_token = encrypt_token(token_data['refresh_token'])
+    # Obtener el token desde la cookie 'access_token'
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No authentication token found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-            return response
+    # Verificar y decodificar token
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-        raise LoginFailed("Invalid username or password")
+    # Validar campos del payload
+    username: Optional[str] = payload.get("sub")
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing user identifier",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    async def logout(self, request: Request, response: Response) -> Response:
-        # Decrypt the token
-        refresh_token = decrypt_token(request.session.get("refresh_token"))
-        if refresh_token:
-            try:
-                keycloak.keycloak_openid.logout(refresh_token=refresh_token)
+    token_expires_at = payload.get("exp")
+    if not token_expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing expiration",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-            except (Exception, KeycloakPostError,
-                    KeycloakInvalidTokenError,
-                    KeycloakConnectionError):
-                    request.session.clear()
-                    return response
+    if token_expires_at < int(datetime.now().timestamp()):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-        request.session.clear()
-        return response
+    # Buscar usuario en base de datos
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    async def is_authenticated(self, request: Request) -> bool:
-        username = request.session.get('username')
-        if not username:
-            return False
+    # Verificar estado del usuario
+    if user.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account inactive"
+        )
 
-        """Refresh the access token if it is close to expiring."""
-        # If access token is about to expire but refresh token is valid, attempt refresh
-        expires_in = request.session.get("expires_in")
-        refresh_expires_in = request.session.get("refresh_expires_in")
-        now = time.time()
-        if refresh_expires_in >= now >= expires_in:
-            # Retrieve the refresh token
-            refresh_token = decrypt_token(request.session.get("refresh_token"))
-            # Refresh the keycloak session
-            token_data = keycloak.keycloak_openid.refresh_token(refresh_token)
-            # Encrypt the refresh token again
-            enc_refresh_token = encrypt_token(token_data['refresh_token'])
-            # Update session with new tokens and expiration
-            try:
-                request.session.update({"refresh_token": enc_refresh_token,
-                                        "access_token": token_data['access_token'],
-                                        "expires_in": token_data['expires_in'] + now,
-                                        "refresh_expires_in": token_data['refresh_expires_in'] + now
-                                        })
-            except (Exception, KeycloakPostError,
-                    KeycloakInvalidTokenError,
-                    KeycloakConnectionError) as e:
-                # If refresh fails, clear session and require re-authentication
-                request.session.clear()
-                print(f"Token refresh failed: {e}")
-                return False
-        elif now > refresh_expires_in:
-            request.session.clear()
-            return False
+    return user
 
-        return True
+def get_current_active_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    Dependencia para endpoints que requieren rol de admin
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. Admin role required."
+        )
+    return current_user

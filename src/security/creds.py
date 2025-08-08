@@ -1,51 +1,105 @@
 import bcrypt
-import hashlib
-import base64
-from configs.ext import SALT, PEPPER, VINAGER
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any
+from jose import JWTError, jwt
 from cryptography.fernet import Fernet
-import jwt
+from src.config.ext import settings
 
+class SecurityManager:
+    """Gestor centralizado de seguridad"""
+    
+    def __init__(self):
+        # Solo si realmente necesitas encriptar tokens (generalmente no es necesario)
+        self.cipher_suite = Fernet(settings.ENCRYPTION_KEY) if hasattr(settings, 'ENCRYPTION_KEY') else None
+    
+    # === PASSWORD MANAGEMENT ===
+    
+    def hash_password(self, password: str) -> str:
+        """
+        Hash password usando bcrypt (ya incluye salt automático)
+        Más simple y seguro que doble hashing
+        """
+        # Agregar pepper si quieres capa extra (opcional)
+        peppered_password = f"{password}{settings.PASSWORD_PEPPER}" if hasattr(settings, 'PASSWORD_PEPPER') else password
+        
+        # bcrypt automáticamente genera salt único para cada password
+        hashed = bcrypt.hashpw(peppered_password.encode('utf-8'), bcrypt.gensalt())
+        return hashed.decode('utf-8')  # bcrypt devuelve string directamente
+    
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """Verificar password"""
+        try:
+            # Agregar pepper si se usó al hashear
+            peppered_password = f"{plain_password}{settings.PASSWORD_PEPPER}" if hasattr(settings, 'PASSWORD_PEPPER') else plain_password
+            
+            return bcrypt.checkpw(peppered_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except Exception:
+            return False
+    
+    # === JWT MANAGEMENT ===
+    
+    def create_access_token(
+        self, 
+        data: Dict[str, Any], 
+        expires_delta: Optional[timedelta] = None
+    ) -> str:
+        """Crear JWT token"""
+        to_encode = data.copy()
+        
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        
+        to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+        
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+        return encoded_jwt
+    
+    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """Verificar y decodificar JWT token"""
+        try:
+            payload = jwt.decode(
+                token, 
+                settings.SECRET_KEY, 
+                algorithms=["HS256"]  # ¡Array, no string!
+            )
+            return payload
+        except JWTError:
+            return None
+    
+    # === TOKEN ENCRYPTION (solo si realmente lo necesitas) ===
+    
+    def encrypt_token(self, token: str) -> str:
+        """Encriptar token con Fernet (opcional)"""
+        if not self.cipher_suite:
+            raise ValueError("Encryption not configured")
+        return self.cipher_suite.encrypt(token.encode()).decode()
+    
+    def decrypt_token(self, encrypted_token: str) -> str:
+        """Desencriptar token"""
+        if not self.cipher_suite:
+            raise ValueError("Encryption not configured")
+        return self.cipher_suite.decrypt(encrypted_token.encode()).decode()
 
-# Generate a key and instantiate a Fernet instance (store the key securely)
-cipher_suite = Fernet(SALT)
+# Instancia singleton
+security = SecurityManager()
 
-# Encrypt the token with fernet
-def encrypt_token(token: str) -> str:
-    return cipher_suite.encrypt(token.encode()).decode()
-
-# Decrypt the token
-def decrypt_token(encrypted_token: str) -> str:
-    return cipher_suite.decrypt(encrypted_token.encode()).decode()
-
-
-# Encode the payload with jwt
-def w_encode(payload: dict) -> str:
-    return jwt.encode(payload=payload, key=PEPPER, algorithm="HS256")
-
-# Decode
-def w_decode(token: str) -> dict:
-    encoded=jwt.decode(jwt=token, key=PEPPER, algorithm="HS256")
-
-
+# Funciones de conveniencia (mantienen tu API actual)
 def hash_password(password: str) -> str:
-    """Hashes a password using SHA-256 with vinager, then bcrypts it, and returns a base64-encoded string."""
-    # Concatenate vinager with password
-    vinagered_password = f"{password}{VINAGER}"
-    hashed_password = hashlib.sha256(vinagered_password.encode('UTF-8')).digest()
+    return security.hash_password(password)
 
-    # Hash with bcrypt
-    bcrypted = bcrypt.hashpw(hashed_password, bcrypt.gensalt())
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return security.verify_password(plain_password, hashed_password)
 
-    # Encode in base64 for storage
-    return base64.b64encode(bcrypted).decode('utf-8')
+def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+    return security.create_access_token(data, expires_delta)
 
-def verify_password(plain_password: str, stored_password: str) -> bool:
-    """Verifies a password against a base64-encoded bcrypt hash, with vinagering."""
-    # Concatenate vinager with password for verification
-    vinagered_password = f"{plain_password}{VINAGER}"
-    hashed_password = hashlib.sha256(vinagered_password.encode('UTF-8')).digest()
+def verify_token(token: str) -> Optional[dict]:
+    return security.verify_token(token)
 
-    # Decode base64 stored password back to bytes
-    bcrypted_password = base64.b64decode(stored_password.encode('utf-8'))
-    # Check with bcrypt
-    return bcrypt.checkpw(hashed_password, bcrypted_password)
+def encrypt_token(token: str) -> str:
+    return security.encrypt_token(token)
+
+def decrypt_token(encrypted_token: str) -> str:
+    return security.decrypt_token(encrypted_token)
