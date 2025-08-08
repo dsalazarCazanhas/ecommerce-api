@@ -5,7 +5,7 @@
 ### Backend Core
 
 - **Framework**: FastAPI
-- **Base de datos**: PostgreSQL + SQLAlchemy (ORM)
+- **Base de datos**: PostgreSQL + SQLMODEL (ORM)
 - **Autenticación**: JWT con python-jose
 - **Validación**: Pydantic
 - **Migraciones**: Alembic
