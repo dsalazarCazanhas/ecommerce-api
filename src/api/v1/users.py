@@ -3,10 +3,9 @@ from sqlmodel import Session, select
 from datetime import datetime, timezone
 
 from src.config.engine import get_session
-from src.security.auth import get_current_user
-from src.utils.funcdb import get_user_by_username
-from src.security.creds import hash_password
-from src.models.users import User, UserCreate, UserRead, UserUpdate, UserPublic
+from src.security.auth import get_current_active_admin, get_current_user, get_user_by_username
+from src.security.creds import security
+from src.models.users import User, UserCreate, UserRead, UserRole, UserUpdate, UserPublic
 
 router = APIRouter()
 
@@ -21,7 +20,7 @@ async def register_user(
 
     # NO uses 'with session' - la dependencia ya maneja esto
     # Verificar si username ya existe
-    existing_username = get_user_by_username(user_data.username)
+    existing_username = get_user_by_username(user_data.username, session)
     
     if existing_username:
         raise HTTPException(
@@ -41,7 +40,7 @@ async def register_user(
         )
 
     # Hash del password
-    hashed_password = hash_password(user_data.password)
+    hashed_password = security.hash_password(user_data.password)
 
     # Crear usuario - CLAVE: convertir a dict primero
     user_dict = user_data.model_dump(exclude={"password"})
@@ -61,16 +60,15 @@ async def register_user(
 
 @router.get("/me", summary="Get Current User")
 async def get_current_user_info(
-    # TODO: Cambiar por una función de autenticación real
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Obtener información del usuario actual"""
     return UserRead.model_validate(current_user)
 
-@router.patch("/me", summary="Update Current User", response_model=None)
+@router.patch("/me", summary="Update Current User", response_model=UserUpdate)
 async def update_current_user(
     user_update: UserUpdate,
-    current_user: User = Depends(get_user_by_username),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Actualizar información del usuario actual"""
@@ -101,13 +99,12 @@ async def update_current_user(
     session.commit()
     session.refresh(current_user)
     
-    return current_user  # ✅ Add this line
+    return current_user
     
 
 @router.get("/profile/{username}", response_model=UserPublic, summary="Get User Profile")
 async def get_user_profile(
     username: str,
-    session: Session = Depends(get_session)
 ) -> UserPublic:
     """Obtener perfil público de un usuario"""
     
@@ -120,3 +117,43 @@ async def get_user_profile(
         )
     
     return UserPublic.model_validate(user)
+
+
+@router.delete(
+    "/delete/{username}",
+    summary="Borrar usuario",
+    description="Borrar un usuario usando su username",
+    response_description="User deleted successfully",
+)
+async def delete_user(
+    username: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_admin),
+):
+    # 1. Evitar que un admin se borre a sí mismo
+    if current_user.username == username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes borrarte a ti mismo."
+        )
+
+    # 2. Buscar al usuario
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado."
+        )
+
+    # 3. Evitar borrar al último admin del sistema
+    if user.role == UserRole.ADMIN:
+        admins_count = session.exec(
+            select(User).where(User.role == UserRole.ADMIN, User.id != user.id)
+        ).count()
+        if admins_count == 0:
+            raise HTTPException(status_code=400, detail="No se puede eliminar el último administrador")
+
+    # 4. Borrado seguro
+    session.delete(user)
+    session.commit()
+    return {"message": f"Usuario '{username}' eliminado correctamente."}

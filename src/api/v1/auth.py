@@ -1,11 +1,10 @@
 # src/routers/auth.py
-from datetime import timedelta, datetime, timezone
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from src.config.engine import get_session
-from src.security.creds import verify_password, create_access_token
+from src.security.creds import security
 from src.config.ext import settings
 from src.security.auth import get_current_user
 from src.models.users import User, UserResponse, UserRead, UserLogin
@@ -32,7 +31,8 @@ async def login(
     user = get_user_by_username(form_data.username, session)
     
     # Validar usuario y contraseña
-    if not user or not verify_password(form_data.password, user.password_hash):
+    if not user or not security.verify_password(form_data.password, user.password_hash):
+        user.failed_login_attempts += 1
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -46,13 +46,14 @@ async def login(
             detail="User account is inactive"
         )
     
-    session.expunge(user)
+    user.last_login = datetime.now(timezone.utc)
     session.add(user)
     session.commit()
+    session.refresh(user)
     
     # Crear token JWT
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
+    access_token = security.create_access_token(
         data={"sub": user.username},  # 'sub' es el estándar para identificar usuario
         expires_delta=access_token_expires
     )
@@ -60,13 +61,13 @@ async def login(
     # ✅ Cookie persistente con expiración
     response.set_cookie(
         key="access_token",
-        value=f"Bearer {access_token}",
+        value=access_token,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=settings.COOKIE_HTTPONLY,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE
     )
-    
+
     # Retornar respuesta estructurada
     return UserResponse(
         user=UserRead.model_validate(user),
@@ -74,22 +75,26 @@ async def login(
 
 @router.post("/refresh", summary="Refresh Token")
 async def refresh_token(
+    response: Response,
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Renovar token JWT para usuario autenticado.
-    Útil para mantener sesión activa sin re-login.
-    """
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": current_user.email},
+    access_token = security.create_access_token(
+        data={"sub": current_user.username},
         expires_delta=access_token_expires
     )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+
+    # actualizar cookie también
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=settings.COOKIE_HTTPONLY,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE
+    )
+
+    return {"message": "Token refreshed"}
 
 @router.post("/logout", summary="User Logout")
 async def logout(response: Response):

@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from src.config.engine import init_db
 from src.config.ext import settings
-#from src.api.v1.users import router as users_router
+from src.api.v1.users import router as users_router
 from src.api.v1.auth import router as auth_router
 
 @asynccontextmanager
@@ -23,7 +23,6 @@ app = FastAPI(
     description="API for managing e-commerce operations",
     version="0.1.0",
     debug=settings.DEBUG,
-    lifespan=lifespan
 )
 
 # Middlewares
@@ -48,11 +47,11 @@ app.include_router(
     tags=["Authentication"]
 )
 
-# app.include_router(
-#     users_router,
-#     prefix="/api/v1/users",
-#     tags=["Users"]
-# )
+app.include_router(
+    users_router,
+    prefix="/api/v1/users",
+    tags=["Users"]
+)
 
 # Archivos estáticos
 app.mount("/static", StaticFiles(directory="./statics"), name="static")

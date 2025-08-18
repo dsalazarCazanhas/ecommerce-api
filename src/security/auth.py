@@ -2,31 +2,13 @@
 from datetime import datetime
 from typing import Optional
 from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
-from jose import JWTError, jwt
 
 from src.config.engine import get_session
-from src.config.ext import settings
 from src.models.users import User
+from src.security.creds import security
 
-# Esquema OAuth2 - FastAPI automáticamente agregará el botón "Authorize" en docs
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
-def verify_token(token: str) -> Optional[dict]:
-    """
-    Verificar y decodificar JWT token
-    Retorna el payload si es válido, None si no
-    """
-    try:
-        payload = jwt.decode(
-            token, 
-            settings.SECRET_KEY, 
-            algorithms=["HS256"]
-        )
-        return payload
-    except JWTError:
-        return None
 
 def get_current_user(
     request: Request,
@@ -42,12 +24,12 @@ def get_current_user(
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No authentication token found",
+            detail="You're not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Verificar y decodificar token
-    payload = verify_token(token)
+    payload = security.verify_token(token)
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -109,3 +91,40 @@ def get_current_active_admin(
             detail="Not enough permissions. Admin role required."
         )
     return current_user
+
+
+def get_user_by_username(username: str, session: Session) -> Optional[User]:
+    """
+    Obtener usuario por username desde la base de datos.
+    
+    Args:
+        username (str): El username del usuario a buscar
+        session (Session, optional): Sesión de DB. Si no se proporciona, crea una nueva.
+    
+    Returns:
+        User: El objeto User si se encuentra, None si no existe
+    """
+    
+    try:
+        # Ejecutar la consulta
+        result = session.exec(select(User).where(User.username == username))
+        return result.first()
+    except Exception as e:
+        # Log del error si tienes logging configurado
+        print(f"Error querying user by username {username}: {e}")
+        return None
+
+def get_user_by_email(email: str, session: Session = None) -> Optional[User]:
+    """
+    Obtener usuario por email desde la base de datos.
+    Función auxiliar útil para login y validaciones
+    """
+    if session is None:
+        session = next(get_session())
+    
+    try:
+        result = session.exec(select(User).where(User.email == email))
+        return result.first()
+    except Exception as e:
+        print(f"Error querying user by email {email}: {e}")
+        return None

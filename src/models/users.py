@@ -24,7 +24,7 @@ class UserBase(SQLModel):
     """Campos base compartidos - SOLO para validación, no para DB"""
     name: str = Field(min_length=2, max_length=30)
     last_name: str = Field(min_length=2, max_length=30)
-    phone: str = Field(min_length=10, max_length=20, regex="^[\+]?[1-9][\d]{3,14}$")
+    phone: str = Field(min_length=10, max_length=20, regex="^[+]?[1-9][0-9]{3,14}$")
     role: UserRole = Field(default=UserRole.USER)
     status: UserStatus = Field(default=UserStatus.ACTIVE)
     username: str = Field(
@@ -90,7 +90,6 @@ class UserCreate(UserBase):
     password: str = Field(
         min_length=8,
         max_length=100,
-        description="Password for the user account (will be hashed)"
     )
     
     @field_validator('password')
@@ -142,13 +141,12 @@ class UserLogin(SQLModel):
 class UserResponse(SQLModel):
     """Schema para respuestas de login exitoso"""
     user: UserRead
-    token_type: str = "bearer"
 
 # === SCHEMAS ADICIONALES ===
 
 class UserPublic(SQLModel):
     """Schema para información pública del usuario (perfiles, comentarios, etc.)"""
-    id: int
+    id: UUID4
     username: str
     name: str
     last_name: str
