@@ -1,10 +1,11 @@
 # app/models/user.py
-from sqlmodel import SQLModel, Field
+from sqlmodel import Relationship, SQLModel, Field
 from pydantic import EmailStr, field_validator, UUID4
-from typing import Optional
+from typing import List, Optional
 from enum import Enum
 from datetime import datetime
-from src.models.base import BaseModel  # Tu IdTable adaptado
+from src.models.base import BaseModel
+
 
 class UserRole(str, Enum):
     """Roles disponibles para usuarios"""
@@ -59,7 +60,7 @@ class User(BaseModel, UserBase, table=True):
     Modelo de usuario para la base de datos.
     Hereda campos de UserBase + configuración específica de DB
     """
-    __tablename__ = "users"
+    __tablename__ = "user"
     
     # Override campos que necesitan configuración especial de DB
     username: str = Field(

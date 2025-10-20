@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     
     # CORS
     ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
-    ALLOWED_ORIGINS: list[str] = ["*"]
+    ALLOWED_ORIGINS: list[str] = ["http://127.0.0.1", "http://localhost", "http://localhost:8000", "http://localhost:3000"]
     
     # App
     DEBUG: bool = True

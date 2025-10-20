@@ -17,7 +17,7 @@ En la mayoría de los casos puedes asumir que no ocurrirá, pero sería bueno es
 """
 class BaseModel(SQLModel):
     """Modelo base con campos comunes"""
-    id: Optional[UUID4] = Field(
+    id: UUID4 = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
         index=True

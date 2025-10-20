@@ -23,6 +23,7 @@ app = FastAPI(
     description="API for managing e-commerce operations",
     version="0.1.0",
     debug=settings.DEBUG,
+    lifespan=lifespan
 )
 
 # Middlewares
