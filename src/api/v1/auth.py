@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session
 
 from src.config.engine import get_session
+from src.crud import users_crud
 from src.security.creds import security
 from src.config.ext import settings
 from src.security.auth import get_current_user
@@ -47,9 +48,7 @@ async def login(
         )
     
     user.last_login = datetime.now(timezone.utc)
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    users_crud.update_user(user, session)
     
     # Crear token JWT
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -78,6 +77,7 @@ async def refresh_token(
     response: Response,
     current_user: User = Depends(get_current_user)
 ):
+    """Refrescar token JWT para usuario autenticado"""
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": current_user.username},
