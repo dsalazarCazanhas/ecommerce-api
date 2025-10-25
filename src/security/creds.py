@@ -1,7 +1,8 @@
 import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
-from jose import JWTError, jwt
+from fastapi import HTTPException, status
+from jose import ExpiredSignatureError, JWTError, jwt
 from src.config.ext import settings
 
 class SecurityManager:
@@ -14,18 +15,18 @@ class SecurityManager:
         Más simple y seguro que doble hashing
         """
         # bcrypt automáticamente genera salt único para cada password
-        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        return hashed.decode('utf-8')  # bcrypt devuelve string directamente
+        hashed = bcrypt.hashpw(password=password.encode('utf-8'), salt=bcrypt.gensalt())
+        return hashed.decode(encoding='utf-8')  # bcrypt devuelve string directamente
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verificar password"""
         try:
-            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+            return bcrypt.checkpw(password=plain_password.encode('utf-8'), hashed_password=hashed_password.encode(encoding='utf-8'))
         except Exception:
             return False
     
-    # === JWT MANAGEMENT ===
     
+    # === JWT MANAGEMENT ===
     def create_access_token(
         self, 
         data: Dict[str, Any], 
@@ -43,23 +44,37 @@ class SecurityManager:
             "exp": expire,
             "iat": datetime.now(timezone.utc)
         })
-        print(settings.SECRET_KEY)
-        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+        encoded_jwt = jwt.encode(claims=to_encode, key=settings.SECRET_KEY, algorithm="HS256")
         return encoded_jwt
     
-    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+    def verify_token(self, token: str) -> Dict[str, Any]:
         """Verificar y decodificar JWT token"""
         try:
-
             payload = jwt.decode(
-                token,
-                settings.SECRET_KEY,
+                token=token,
+                key=settings.SECRET_KEY,
                 algorithms=["HS256"]
             )
 
+            # Validar que tenga campos mínimos esperados
+            if "sub" not in payload:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token payload"
+                )
+
             return payload
+
+        except ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired"
+            )
         except JWTError:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token"
+            )
 
 # Instancia singleton
 security = SecurityManager()
