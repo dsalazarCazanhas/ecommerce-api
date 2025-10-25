@@ -8,12 +8,12 @@ from src.crud import users_crud
 from src.security.creds import security
 from src.config.ext import settings
 from src.security.auth import get_current_user
-from src.models.users import User, UserResponse, UserRead, UserLogin
+from src.models.users import User, UserRead, UserLogin
 from src.utils.funcdb import get_user_by_username
 
 router = APIRouter()
 
-@router.post("/login", response_model=UserResponse, summary="User Login")
+@router.post("/login", response_model=UserRead, summary="User Login")
 async def login(
     form_data: UserLogin,
     response: Response,
@@ -48,7 +48,7 @@ async def login(
         )
     
     user.last_login = datetime.now(timezone.utc)
-    users_crud.update_user(user, session)
+    users_crud.update_user(user=user, session=session)
     
     # Crear token JWT
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -66,11 +66,9 @@ async def login(
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE
     )
-
+    
     # Retornar respuesta estructurada
-    return UserResponse(
-        user=UserRead.model_validate(user),
-    )
+    return UserRead.model_validate(user)
 
 @router.post("/refresh", summary="Refresh Token")
 async def refresh_token(
