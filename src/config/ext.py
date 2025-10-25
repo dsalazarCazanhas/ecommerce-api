@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     # App
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
+    HOST: str = "HOST"
+    PORT: int = "PORT"
     
     class Config:
         env_file = ".env"

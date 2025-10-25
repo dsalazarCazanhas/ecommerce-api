@@ -10,6 +10,7 @@ from src.api.v1.users import router as users_router
 from src.api.v1.auth import router as auth_router
 from src.api.v1.admin import router as admin_router
 from src.api.v1.public import router as public_router
+from src.api.v1.products import router as products_router
 from src.security.auth import get_current_active_admin
 
 @asynccontextmanager
@@ -66,6 +67,12 @@ app.include_router(
     prefix=f"{settings.API_V1_STR}/admin",
     tags=["Administration"],
     dependencies=[Depends(get_current_active_admin)]
+)
+
+app.include_router(
+    products_router,
+    prefix=f"{settings.API_V1_STR}/products",
+    tags=["Products"],
 )
 
 # Archivos estáticos
