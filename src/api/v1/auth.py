@@ -9,7 +9,7 @@ from src.security.creds import security
 from src.config.ext import settings
 from src.security.auth import get_current_user
 from src.models.users import User, UserRead, UserLogin
-from src.utils.funcdb import get_user_by_username
+
 
 router = APIRouter()
 
@@ -29,10 +29,10 @@ async def login(
     """
     
     # Buscar usuario por username
-    user = get_user_by_username(form_data.username, session)
+    user = users_crud.get_user_by_username(username=form_data.username, session=session)
     
     # Validar usuario y contraseña
-    if not user or not security.verify_password(form_data.password, user.password_hash):
+    if not user or not security.verify_password(plain_password=form_data.password, hashed_password=user.password_hash):
         user.failed_login_attempts += 1
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
