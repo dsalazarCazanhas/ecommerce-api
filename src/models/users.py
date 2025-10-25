@@ -1,7 +1,7 @@
 # app/models/user.py
-from sqlmodel import Relationship, SQLModel, Field
+from sqlmodel import SQLModel, Field
 from pydantic import EmailStr, field_validator, UUID4
-from typing import List, Optional
+from typing import Optional
 from enum import Enum
 from datetime import datetime
 from src.models.base import BaseModel
@@ -108,14 +108,14 @@ class UserCreate(UserBase):
         return v
 
 class UserRead(UserBase):
-    """Schema para leer usuario (sin información sensible)"""
-    id: UUID4  # O UUID si usas UUID en BaseModel
+    """Schema para leer usuario"""
+    id: UUID4
     created_at: datetime
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     
     class Config:
-        from_attributes = True  # Permite crear desde objetos SQLModel
+        from_attributes = True
 
 class UserUpdate(SQLModel):
     """Schema para actualizar usuario (todos los campos opcionales)"""
@@ -139,27 +139,16 @@ class UserLogin(SQLModel):
     username: str = Field(description="username")
     password: str = Field(min_length=1, description="User password")
 
-class UserResponse(SQLModel):
-    """Schema para respuestas de login exitoso"""
-    user: UserRead
-
 # === SCHEMAS ADICIONALES ===
 
-class UserPublic(SQLModel):
-    """Schema para información pública del usuario (perfiles, comentarios, etc.)"""
+class UserAdmin(UserRead):
+    """Schema con información adicional para administradores"""
     id: UUID4
     username: str
     name: str
     last_name: str
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-class UserAdmin(UserRead):
-    """Schema con información adicional para administradores"""
     failed_login_attempts: int
-    password_hash: str  # Solo para admins
+    password_hash: str
     
     class Config:
         from_attributes = True
