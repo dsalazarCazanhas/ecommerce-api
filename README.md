@@ -4,7 +4,8 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-SQLModel-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
-![Status](https://img.shields.io/badge/Build-Passing-brightgreen)
+
+## [Roadmap Project](https://roadmap.sh/projects/ecommerce-api)
 
 A scalable and modular **E-commerce REST API** built with **FastAPI**, **SQLModel**, and **PostgreSQL**.  
 It provides secure authentication, product management, cart and order handling, and payment integration with **Stripe**.

@@ -95,7 +95,7 @@ async def refresh_token(
     return {"message": "Token refreshed"}
 
 @router.post("/logout", summary="User Logout")
-async def logout(response: Response):
+async def logout(response: Response, _: User = Depends(get_current_user)):
     """Logout usuario eliminando la cookie"""
     response.delete_cookie(
         key="access_token",

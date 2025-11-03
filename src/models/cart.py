@@ -16,7 +16,7 @@ class CartItem(BaseModel, table=True):
     quantity: int = Field(default=1, ge=1)
     
     # para snapshot en el carrito podrías almacenar precio en el momento
-    unit_price: float = Field(..., description="Precio por unidad al momento de agregar; requerido para snapshot en el carrito")  # requerido
+    unit_price: float = Field(..., description="Precio por unidad al momento de agregar; requerido para snapshot en el carrito")
     
     cart: "Cart" = Relationship(back_populates="items")
     product: "Product" = Relationship(back_populates="cart_items")

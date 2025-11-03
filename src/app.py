@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from fastapi.middleware.gzip import GZipMiddleware
 
 from src.config.engine import init_db
 from src.config.ext import settings
@@ -13,13 +14,14 @@ from src.api.v1.public import router as public_router
 from src.api.v1.products import router as products_router
 from src.security.auth import get_current_active_admin
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manejo del ciclo de vida de la app"""
+    """App lifespan context manager"""
     init_db()
     yield
 
-# Crear app FastAPI
+# FastAPI app instance
 app = FastAPI(
     title="E-commerce API",
     description="API for managing e-commerce operations",
@@ -33,7 +35,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET","POST", "PATCH", "DELETE"],
+    allow_methods=settings.ALLOWED_METHODS,
     allow_headers=["*"],
 )
 
@@ -42,8 +44,10 @@ app.add_middleware(
     allowed_hosts=settings.ALLOWED_HOSTS
 )
 
-# Incluir routers
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+
+# Routers
 app.include_router(
     public_router,
     prefix=f"{settings.API_V1_STR}",
@@ -75,6 +79,7 @@ app.include_router(
     tags=["Products"],
 )
 
-# Archivos estáticos
-app.mount("/static", StaticFiles(directory="./statics"), name="static")
+# Static files
+app.mount("/static", StaticFiles(directory="statics", html=False), name="static")
+
 
