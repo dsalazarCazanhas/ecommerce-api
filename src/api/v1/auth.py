@@ -20,27 +20,35 @@ async def login(
     session: Session = Depends(get_session)
 ):
     """
-    Autenticar usuario y generar token JWT.
+    Authenticate user and return JWT token.
     
-    - **username**: Username del usuario a loguear por username
-    - **password**: Contraseña del usuario
+    - **username**: User username
+    - **password**: User password
     
-    Retorna token JWT para usar en endpoints protegidos.
+    Returns a JWT token in an HTTP-only cookie upon successful authentication.
     """
     
-    # Buscar usuario por username
+    # Search for user by username
     user = users_crud.get_user_by_username(username=form_data.username, session=session)
     
-    # Validar usuario y contraseña
+    # Verify username and password
     if not user or not security.verify_password(plain_password=form_data.password, hashed_password=user.password_hash):
+        if user.failed_login_attempts >= settings.MAX_FAILED_LOGIN_ATTEMPTS:
+            user.status = "inactive"
+            users_crud.update_user(user=user, session=session)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive due to too many failed login attempts"
+            )
         user.failed_login_attempts += 1
+        users_crud.update_user(user=user, session=session)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Verificar que el usuario esté activo
+    # Check if user is active
     if user.status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -50,14 +58,14 @@ async def login(
     user.last_login = datetime.now(timezone.utc)
     users_crud.update_user(user=user, session=session)
     
-    # Crear token JWT
+    # Create JWT token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
-        data={"sub": user.username},  # 'sub' es el estándar para identificar usuario
+        data={"sub": user.username},
         expires_delta=access_token_expires
     )
 
-    # ✅ Cookie persistente con expiración
+    # Persistent cookie with token
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -67,7 +75,6 @@ async def login(
         samesite=settings.COOKIE_SAMESITE
     )
     
-    # Retornar respuesta estructurada
     return UserRead.model_validate(user)
 
 @router.post("/refresh", summary="Refresh Token")
@@ -75,14 +82,14 @@ async def refresh_token(
     response: Response,
     current_user: User = Depends(get_current_user)
 ):
-    """Refrescar token JWT para usuario autenticado"""
+    """Refresh JWT token for the current user."""
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": current_user.username},
         expires_delta=access_token_expires
     )
 
-    # actualizar cookie también
+    # Update cookie with new token
     response.set_cookie(
         key="access_token",
         value=access_token,

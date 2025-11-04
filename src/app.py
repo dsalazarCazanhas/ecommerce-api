@@ -12,6 +12,7 @@ from src.api.v1.auth import router as auth_router
 from src.api.v1.admin import router as admin_router
 from src.api.v1.public import router as public_router
 from src.api.v1.products import router as products_router
+from src.api.v1.cart import router as cart_router
 from src.security.auth import get_current_active_admin
 
 
@@ -44,8 +45,8 @@ app.add_middleware(
     allowed_hosts=settings.ALLOWED_HOSTS
 )
 
-app.add_middleware(GZipMiddleware, minimum_size=1000)
-
+if settings.ENVIRONMENT == "production":
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Routers
 app.include_router(
@@ -77,6 +78,12 @@ app.include_router(
     products_router,
     prefix=f"{settings.API_V1_STR}/products",
     tags=["Products"],
+)
+
+app.include_router(
+    cart_router,
+    prefix=f"{settings.API_V1_STR}/cart",
+    tags=["Cart"],
 )
 
 # Static files
