@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     SESSION_KEY: str = secrets.token_urlsafe(32)
     CSRF_KEY: str = secrets.token_urlsafe(32)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    MAX_FAILED_LOGIN_ATTEMPTS: int = 5
 
     # Cookie
     COOKIE_SECURE: bool = True
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     HOST: str = "HOST"
     PORT: int = "PORT"
+    ENVIRONMENT: str = "development"
     
     class Config:
         env_file = ".env"
