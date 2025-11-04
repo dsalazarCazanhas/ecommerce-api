@@ -1,12 +1,13 @@
-# app/models/user.py
-from sqlmodel import SQLModel, Field
+from sqlmodel import Relationship, SQLModel, Field
 from pydantic import EmailStr, field_validator, UUID4
-from typing import Optional
+from typing import List, Optional
 from enum import Enum
 from datetime import datetime
+
 from src.models.base import BaseModel
 
 
+# === SCHEMAS BASE ===
 class UserRole(str, Enum):
     """Roles disponibles para usuarios"""
     ADMIN = "admin"
@@ -18,8 +19,6 @@ class UserStatus(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive" 
     SUSPENDED = "suspended"
-
-# === SCHEMAS BASE ===
 
 class UserBase(SQLModel):
     """Campos base compartidos - SOLO para validación, no para DB"""
@@ -83,6 +82,8 @@ class User(BaseModel, UserBase, table=True):
     # Campos adicionales específicos de la DB
     last_login: Optional[datetime] = Field(default=None)
     failed_login_attempts: int = Field(default=0)
+
+    cart: List["Cart"] = Relationship(back_populates="user")
 
 # === SCHEMAS PARA API ===
 

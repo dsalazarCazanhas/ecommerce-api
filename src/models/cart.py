@@ -1,13 +1,21 @@
+from enum import Enum
 from typing import List
 from pydantic import UUID4
 from sqlmodel import Field, Relationship
 
 from src.models.base import BaseModel
 from src.models.products import Product
+from src.models.users import User
 
 
-# === MODELOS DE CARRITO DE COMPRAS ===
-"""Modelos de carrito de compras para la base de datos y validación."""
+# === Shopping Cart Models ===
+class CartStatus(str, Enum):
+    """Estados del usuario"""
+    ACTIVE = "active"
+    ABANDONED = "abandoned"
+    ORDERED = "ordered"
+
+"""Shopping cart and cart item models for e-commerce functionality."""
 class CartItem(BaseModel, table=True):
     __tablename__ = "cart_item"
 
@@ -15,8 +23,7 @@ class CartItem(BaseModel, table=True):
     product_id: UUID4 = Field(foreign_key="product.id")
     quantity: int = Field(default=1, ge=1)
     
-    # para snapshot en el carrito podrías almacenar precio en el momento
-    unit_price: float = Field(..., description="Precio por unidad al momento de agregar; requerido para snapshot en el carrito")
+    unit_price: float = Field(..., description="Unit price at the time of adding to cart")
     
     cart: "Cart" = Relationship(back_populates="items")
     product: "Product" = Relationship(back_populates="cart_items")
@@ -24,10 +31,10 @@ class CartItem(BaseModel, table=True):
 class Cart(BaseModel, table=True):
     __tablename__ = "cart"
 
-    # cada usuario tiene al menos un carrito “activo” o en estado “abierto”
+    # each cart is associated with a user
     user_id: UUID4 = Field(foreign_key="user.id")
-    # opcional: estado del carrito (ej. “active”, “abandoned”, “ordered”)
-    status: str = Field(default="active")
+    # cart status: active, ordered, abandoned
+    status: CartStatus = Field(default=CartStatus.ACTIVE)
     
-    # relación inversa
     items: List["CartItem"] = Relationship(back_populates="cart")
+    user: "User" = Relationship(back_populates="cart")

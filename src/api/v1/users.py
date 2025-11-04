@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 from datetime import datetime, timezone
 
-from src.security.creds import security
 from src.config.engine import get_session
 from src.crud import users_crud
 from src.models.users import User, UserRead, UserUpdate
