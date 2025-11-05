@@ -3,6 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-SQLModel-blue)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/t/dsalazarCazanhas/ecommerce-api)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## [Roadmap Project](https://roadmap.sh/projects/ecommerce-api)
