@@ -4,7 +4,7 @@
 > THIS PROJECT IS CURRENTLY BEING MIGRATED TO A NEW TECH STACK.
 > PLEASE REFER TO THE [NEW REPOSITORY](https://github.com/dsalazarCazanhas/ecommerce-api/tree/dev-migrate)
 
-![Status](https://img.shields.io/badge/status-development-orange?style=flat-square&logo=tools&logoColor=white)
+![Status](https://img.shields.io/badge/status-development-orange?style=for-the-badge&logo=gear&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-SQLModel-blue)
