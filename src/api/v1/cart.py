@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from src.config.engine import get_session
-from src.models.users import User
+from src.models.users import User, UserRead
 from src.models.products import Product
 from src.security.auth import get_current_user, get_current_active_admin
-from src.models.cart import Cart
+from src.models.cart import Cart, CartItem
 from src.crud import cart_crud
 
 
@@ -81,3 +81,36 @@ def list_carts(
     List all carts (admin only).
     """
     return cart_crud.list_all_carts(session)
+
+
+
+@router.get("/me/items")
+def list_cart_items(current_user: UserRead = Depends(get_current_user), session: Session = Depends(get_session)):
+    # Get active cart for user
+    cart = session.exec(
+        select(Cart).where(Cart.user_id == current_user.id, Cart.status == "active")
+    ).first()
+
+    if not cart:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    # Get cart items with product info
+    items = session.exec(
+        select(CartItem)
+        .where(CartItem.cart_id == cart.id)
+        .join(Product)
+    ).all()
+
+    # Optional: return as clean JSON
+    result = [
+        {
+            "product_id": item.product.id,
+            "name": item.product.name,
+            "price": item.unit_price,
+            "quantity": item.quantity,
+            "subtotal": item.quantity * item.unit_price
+        }
+        for item in items
+    ]
+
+    return {"cart_id": cart.id, "items": result}

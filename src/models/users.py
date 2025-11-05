@@ -9,19 +9,19 @@ from src.models.base import BaseModel
 
 # === SCHEMAS BASE ===
 class UserRole(str, Enum):
-    """Roles disponibles para usuarios"""
+    """User Roles"""
     ADMIN = "admin"
     USER = "user"
     MODERATOR = "moderator"
 
 class UserStatus(str, Enum):
-    """Estados del usuario"""
+    """User statuses"""
     ACTIVE = "active"
     INACTIVE = "inactive" 
     SUSPENDED = "suspended"
 
 class UserBase(SQLModel):
-    """Campos base compartidos - SOLO para validación, no para DB"""
+    """Base fields for validation only"""
     name: str = Field(min_length=2, max_length=30)
     last_name: str = Field(min_length=2, max_length=30)
     phone: str = Field(min_length=10, max_length=20, regex="^[+]?[1-9][0-9]{3,14}$")
@@ -38,7 +38,7 @@ class UserBase(SQLModel):
     @field_validator('name', 'last_name')
     @classmethod
     def validate_names(cls, v: str) -> str:
-        """Validar y formatear nombres"""
+        """Validate and format names"""
         if not v.replace(' ', '').replace('-', '').isalpha():
             raise ValueError('Name must contain only letters, spaces and hyphens')
         return v.strip().title()
@@ -46,22 +46,20 @@ class UserBase(SQLModel):
     @field_validator('username')
     @classmethod
     def validate_username(cls, v: str) -> str:
-        """Validar username"""
+        """Validate username against forbidden names"""
         forbidden = ['admin', 'root', 'system', 'api', 'null', 'undefined']
         if v.lower() in forbidden:
             raise ValueError('Username not allowed')
         return v.lower()
 
-# === MODELO DE BASE DE DATOS ===
 
+# === DB MODEL ===
 class User(BaseModel, UserBase, table=True):
     """
-    Modelo de usuario para la base de datos.
-    Hereda campos de UserBase + configuración específica de DB
+    user model for the database
     """
     __tablename__ = "user"
     
-    # Override campos que necesitan configuración especial de DB
     username: str = Field(
         min_length=4,
         max_length=15,
@@ -79,16 +77,15 @@ class User(BaseModel, UserBase, table=True):
     
     password_hash: str = Field(description="Hashed password")
     
-    # Campos adicionales específicos de la DB
     last_login: Optional[datetime] = Field(default=None)
     failed_login_attempts: int = Field(default=0)
 
-    cart: List["Cart"] = Relationship(back_populates="user")
+    cart: List["Cart"] = Relationship(back_populates="user") # type: ignore
+
 
 # === SCHEMAS PARA API ===
-
 class UserCreate(UserBase):
-    """Schema para crear un usuario nuevo - NO hereda de User (table)"""
+    """Schema for creating a user"""
     password: str = Field(
         min_length=8,
         max_length=100,
@@ -97,7 +94,7 @@ class UserCreate(UserBase):
     @field_validator('password')
     @classmethod
     def validate_password(cls, v: str) -> str:
-        """Validar fortaleza de la contraseña"""
+        """Validate password complexity"""
         if not any(c.isupper() for c in v):
             raise ValueError('Password must contain at least one uppercase letter')
         if not any(c.islower() for c in v):
@@ -109,7 +106,7 @@ class UserCreate(UserBase):
         return v
 
 class UserRead(UserBase):
-    """Schema para leer usuario"""
+    """Schema for reading user info"""
     id: UUID4
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -119,7 +116,7 @@ class UserRead(UserBase):
         from_attributes = True
 
 class UserUpdate(SQLModel):
-    """Schema para actualizar usuario (todos los campos opcionales)"""
+    """Schema for updating user info"""
     name: Optional[str] = Field(None, min_length=2, max_length=30)
     last_name: Optional[str] = Field(None, min_length=2, max_length=30)
     email: Optional[EmailStr] = None
@@ -136,14 +133,14 @@ class UserUpdate(SQLModel):
         return v.strip().title()
 
 class UserLogin(SQLModel):
-    """Schema para login"""
+    """Schema for user login"""
     username: str = Field(description="username")
     password: str = Field(min_length=1, description="User password")
 
-# === SCHEMAS ADICIONALES ===
 
+# === SCHEMAS ADICIONALES ===
 class UserAdmin(UserRead):
-    """Schema con información adicional para administradores"""
+    """Schema for admin view of user"""
     id: UUID4
     username: str
     name: str

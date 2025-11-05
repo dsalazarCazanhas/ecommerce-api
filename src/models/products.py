@@ -6,8 +6,8 @@ from sqlmodel import Field, Relationship, SQLModel
 from src.models.base import BaseModel
 
 
-# === MODELOS DE PRODUCTOS ===
-"""Modelos de productos para la base de datos y validación."""
+# === Products Model ===
+"""Product models DB"""
 class ProductBase(SQLModel):
     name: str
     description: Optional[str] = None

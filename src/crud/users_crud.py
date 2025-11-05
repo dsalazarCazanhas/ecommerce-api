@@ -1,7 +1,8 @@
 from sqlmodel import Session, select
-from src.models.users import User
 
-def get_user_by_username(username: str, session: Session) -> User | None:
+from src.models.users import User, UserRead
+
+def get_user_by_username(username: str, session: Session) -> UserRead | None:
     return session.exec(select(User).where(User.username == username)).first()
 
 def get_user_by_email(email: str, session: Session) -> User | None:

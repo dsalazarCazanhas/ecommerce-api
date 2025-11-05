@@ -10,7 +10,7 @@ from src.models.users import User
 
 # === Shopping Cart Models ===
 class CartStatus(str, Enum):
-    """Estados del usuario"""
+    """Cart statuses"""
     ACTIVE = "active"
     ABANDONED = "abandoned"
     ORDERED = "ordered"
