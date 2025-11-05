@@ -3,23 +3,23 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
 from jose import ExpiredSignatureError, JWTError, jwt
+
 from src.config.ext import settings
 
+
 class SecurityManager:
-    """Gestor centralizado de seguridad"""
+    """Security manager for password hashing and JWT handling"""
     
     # === PASSWORD MANAGEMENT ===
     def hash_password(self, password: str) -> str:
         """
-        Hash password usando bcrypt (ya incluye salt automático)
-        Más simple y seguro que doble hashing
+        Hash password using bcrypt
         """
-        # bcrypt automáticamente genera salt único para cada password
         hashed = bcrypt.hashpw(password=password.encode('utf-8'), salt=bcrypt.gensalt())
-        return hashed.decode(encoding='utf-8')  # bcrypt devuelve string directamente
+        return hashed.decode(encoding='utf-8')
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Verificar password"""
+        """Check password against hashed value"""
         try:
             return bcrypt.checkpw(password=plain_password.encode('utf-8'), hashed_password=hashed_password.encode(encoding='utf-8'))
         except Exception:
@@ -32,7 +32,7 @@ class SecurityManager:
         data: Dict[str, Any], 
         expires_delta: Optional[timedelta] = None
     ) -> str:
-        """Crear JWT token"""
+        """Create JWT access token"""
         to_encode = data.copy()
         
         if expires_delta:
@@ -48,7 +48,7 @@ class SecurityManager:
         return encoded_jwt
     
     def verify_token(self, token: str) -> Dict[str, Any]:
-        """Verificar y decodificar JWT token"""
+        """Check and decode JWT token"""
         try:
             payload = jwt.decode(
                 token=token,
@@ -56,7 +56,6 @@ class SecurityManager:
                 algorithms=["HS256"]
             )
 
-            # Validar que tenga campos mínimos esperados
             if "sub" not in payload:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,5 +75,4 @@ class SecurityManager:
                 detail="Invalid authentication token"
             )
 
-# Instancia singleton
 security = SecurityManager()

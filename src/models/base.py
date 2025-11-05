@@ -6,16 +6,16 @@ import uuid
 
 
 """
-Los UUIDs previenen la filtración de información.
-Debido a que los UUIDs versión 4 son aleatorios, puedes asignar estos IDs a los usuarios de la aplicación o a otros sistemas sin exponer información sobre tu aplicación.
+UUIDs prevent information leakage.
+Because version 4 UUIDs are random, you can assign these IDs to application users or other systems without exposing information about your application.
 
-Al usar enteros auto-incrementales como claves primarias, podrías exponer implícitamente información sobre tu sistema.
+When using auto-incrementing integers as primary keys, you could implicitly expose information about your system.
 
-Aún existe una pequeña posibilidad de colisión, pero es muy baja.
-En la mayoría de los casos puedes asumir que no ocurrirá, pero sería bueno estar preparado para ello.
+There is still a small possibility of collision, but it is very low.
+In most cases you can assume it won't happen, but it would be good to be prepared for it.
 """
 class BaseModel(SQLModel):
-    """Modelo base con campos comunes"""
+    """Base Model"""
     id: Optional[UUID4] = Field(
         default_factory=uuid.uuid4,
         primary_key=True,

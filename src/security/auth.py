@@ -6,21 +6,17 @@ from sqlmodel import Session
 
 from src.config.engine import get_session
 from src.crud import users_crud
-from src.models.users import User
+from src.models.users import User, UserRead
 from src.security.creds import security
-
 
 
 def get_current_user(
     request: Request,
     session: Session = Depends(get_session)
-) -> User:
+) -> UserRead:
     """
-    Dependencia para obtener el usuario actual desde el JWT token en la cookie
-    Se usa en endpoints que requieren autenticación
+    Get current active user from token in cookies
     """
-    
-    # Obtener el token desde la cookie 'access_token'
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(
@@ -29,7 +25,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verificar y decodificar token
+    # Verify token
     payload = security.verify_token(token=token)
     if not payload:
         raise HTTPException(
@@ -38,7 +34,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Validar campos del payload
+    # Check token contents
     username: Optional[str] = payload.get("sub")
     if not username:
         raise HTTPException(
@@ -62,7 +58,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Buscar usuario en base de datos
+    # Search user in DB
     user = users_crud.get_user_by_username(username=username, session=session)
     if not user:
         raise HTTPException(
@@ -71,7 +67,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verificar estado del usuario
+    # Check if user is active
     if user.status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -84,7 +80,7 @@ def get_current_active_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """
-    Dependencia para endpoints que requieren rol de admin
+    Check if current user is admin
     """
     if current_user.role != "admin":
         raise HTTPException(

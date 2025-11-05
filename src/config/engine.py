@@ -1,8 +1,7 @@
-from src.models import *
 from sqlmodel import SQLModel, create_engine, Session
 from src.config.ext import settings
 
-# Engine con SQLModel
+# SqlModel engine setup
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
@@ -10,10 +9,10 @@ engine = create_engine(
 )
 
 def init_db():
-    """Inicializar base de datos"""
+    """Initialize the database and create tables"""
     SQLModel.metadata.create_all(engine)
 
 def get_session():
-    """Dependency para obtener sesión de DB"""
+    """Function to get the database session"""
     with Session(engine) as session:
         yield session
