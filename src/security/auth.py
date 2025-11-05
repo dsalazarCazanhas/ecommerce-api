@@ -2,31 +2,14 @@
 from datetime import datetime
 from typing import Optional
 from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import Session, select
-from jose import JWTError, jwt
+from sqlmodel import Session
 
 from src.config.engine import get_session
-from src.config.ext import settings
+from src.crud import users_crud
 from src.models.users import User
+from src.security.creds import security
 
-# Esquema OAuth2 - FastAPI automáticamente agregará el botón "Authorize" en docs
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
-def verify_token(token: str) -> Optional[dict]:
-    """
-    Verificar y decodificar JWT token
-    Retorna el payload si es válido, None si no
-    """
-    try:
-        payload = jwt.decode(
-            token, 
-            settings.SECRET_KEY, 
-            algorithms=["HS256"]
-        )
-        return payload
-    except JWTError:
-        return None
 
 def get_current_user(
     request: Request,
@@ -42,12 +25,12 @@ def get_current_user(
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No authentication token found",
+            detail="You're not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Verificar y decodificar token
-    payload = verify_token(token)
+    payload = security.verify_token(token=token)
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,7 +63,7 @@ def get_current_user(
         )
 
     # Buscar usuario en base de datos
-    user = session.exec(select(User).where(User.username == username)).first()
+    user = users_crud.get_user_by_username(username=username, session=session)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

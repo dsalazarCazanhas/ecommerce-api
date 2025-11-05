@@ -1,3 +1,4 @@
+from src.models import *
 from sqlmodel import SQLModel, create_engine, Session
 from src.config.ext import settings
 

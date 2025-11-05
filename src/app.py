@@ -1,23 +1,28 @@
-import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from fastapi.middleware.gzip import GZipMiddleware
 
 from src.config.engine import init_db
 from src.config.ext import settings
-#from src.api.v1.users import router as users_router
+from src.api.v1.users import router as users_router
 from src.api.v1.auth import router as auth_router
+from src.api.v1.admin import router as admin_router
+from src.api.v1.public import router as public_router
+from src.api.v1.products import router as products_router
+from src.api.v1.cart import router as cart_router
+from src.security.auth import get_current_active_admin
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manejo del ciclo de vida de la app"""
+    """App lifespan context manager"""
     init_db()
     yield
 
-# Crear app FastAPI
+# FastAPI app instance
 app = FastAPI(
     title="E-commerce API",
     description="API for managing e-commerce operations",
@@ -31,7 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=settings.ALLOWED_METHODS,
     allow_headers=["*"],
 )
 
@@ -40,39 +45,48 @@ app.add_middleware(
     allowed_hosts=settings.ALLOWED_HOSTS
 )
 
-# Incluir routers
+if settings.ENVIRONMENT == "production":
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Routers
+app.include_router(
+    public_router,
+    prefix=f"{settings.API_V1_STR}",
+    tags=["Public"]
+)
 
 app.include_router(
     auth_router,
-    prefix="/api/v1/auth",
+    prefix=f"{settings.API_V1_STR}/auth",
     tags=["Authentication"]
 )
 
-# app.include_router(
-#     users_router,
-#     prefix="/api/v1/users",
-#     tags=["Users"]
-# )
+app.include_router(
+    users_router,
+    prefix=f"{settings.API_V1_STR}/users",
+    tags=["Users"]
+)
 
-# Archivos estáticos
-app.mount("/static", StaticFiles(directory="./statics"), name="static")
+app.include_router(
+    admin_router,
+    prefix=f"{settings.API_V1_STR}/admin",
+    tags=["Administration"],
+    dependencies=[Depends(get_current_active_admin)]
+)
 
-# Favicon endpoint
-@app.get('/favicon.ico', include_in_schema=False)
-async def favicon():
-    return FileResponse(os.path.join('statics', 'favicon.ico'))
+app.include_router(
+    products_router,
+    prefix=f"{settings.API_V1_STR}/products",
+    tags=["Products"],
+)
 
-# Estado de la app endpoint
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+app.include_router(
+    cart_router,
+    prefix=f"{settings.API_V1_STR}/cart",
+    tags=["Cart"],
+)
 
-# Endpoints básicos
-@app.get("/")
-async def read_root():
-    return {
-        "title": app.title,
-        "description": app.description,
-        "version": app.version
-    }
+# Static files
+app.mount("/static", StaticFiles(directory="statics", html=False), name="static")
+
 

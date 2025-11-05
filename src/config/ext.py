@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     SESSION_KEY: str = secrets.token_urlsafe(32)
     CSRF_KEY: str = secrets.token_urlsafe(32)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    MAX_FAILED_LOGIN_ATTEMPTS: int = 5
 
     # Cookie
     COOKIE_SECURE: bool = True
@@ -22,11 +23,15 @@ class Settings(BaseSettings):
     
     # CORS
     ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
-    ALLOWED_ORIGINS: list[str] = ["*"]
+    ALLOWED_ORIGINS: list[str] = ["http://127.0.0.1", "http://localhost", "http://localhost:8000", "http://localhost:3000"]
+    ALLOWED_METHODS: list[str] = ["GET", "POST", "PATCH", "DELETE"]
     
     # App
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
+    HOST: str = "HOST"
+    PORT: int = "PORT"
+    ENVIRONMENT: str = "development"
     
     class Config:
         env_file = ".env"

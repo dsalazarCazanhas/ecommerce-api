@@ -1,11 +1,13 @@
-# app/models/user.py
-from sqlmodel import SQLModel, Field
+from sqlmodel import Relationship, SQLModel, Field
 from pydantic import EmailStr, field_validator, UUID4
-from typing import Optional
+from typing import List, Optional
 from enum import Enum
 from datetime import datetime
-from src.models.base import BaseModel  # Tu IdTable adaptado
 
+from src.models.base import BaseModel
+
+
+# === SCHEMAS BASE ===
 class UserRole(str, Enum):
     """Roles disponibles para usuarios"""
     ADMIN = "admin"
@@ -18,13 +20,11 @@ class UserStatus(str, Enum):
     INACTIVE = "inactive" 
     SUSPENDED = "suspended"
 
-# === SCHEMAS BASE ===
-
 class UserBase(SQLModel):
     """Campos base compartidos - SOLO para validación, no para DB"""
     name: str = Field(min_length=2, max_length=30)
     last_name: str = Field(min_length=2, max_length=30)
-    phone: str = Field(min_length=10, max_length=20, regex="^[\+]?[1-9][\d]{3,14}$")
+    phone: str = Field(min_length=10, max_length=20, regex="^[+]?[1-9][0-9]{3,14}$")
     role: UserRole = Field(default=UserRole.USER)
     status: UserStatus = Field(default=UserStatus.ACTIVE)
     username: str = Field(
@@ -59,7 +59,7 @@ class User(BaseModel, UserBase, table=True):
     Modelo de usuario para la base de datos.
     Hereda campos de UserBase + configuración específica de DB
     """
-    __tablename__ = "users"
+    __tablename__ = "user"
     
     # Override campos que necesitan configuración especial de DB
     username: str = Field(
@@ -83,6 +83,8 @@ class User(BaseModel, UserBase, table=True):
     last_login: Optional[datetime] = Field(default=None)
     failed_login_attempts: int = Field(default=0)
 
+    cart: List["Cart"] = Relationship(back_populates="user")
+
 # === SCHEMAS PARA API ===
 
 class UserCreate(UserBase):
@@ -90,7 +92,6 @@ class UserCreate(UserBase):
     password: str = Field(
         min_length=8,
         max_length=100,
-        description="Password for the user account (will be hashed)"
     )
     
     @field_validator('password')
@@ -108,14 +109,14 @@ class UserCreate(UserBase):
         return v
 
 class UserRead(UserBase):
-    """Schema para leer usuario (sin información sensible)"""
-    id: UUID4  # O UUID si usas UUID en BaseModel
+    """Schema para leer usuario"""
+    id: UUID4
     created_at: datetime
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     
     class Config:
-        from_attributes = True  # Permite crear desde objetos SQLModel
+        from_attributes = True
 
 class UserUpdate(SQLModel):
     """Schema para actualizar usuario (todos los campos opcionales)"""
@@ -139,28 +140,16 @@ class UserLogin(SQLModel):
     username: str = Field(description="username")
     password: str = Field(min_length=1, description="User password")
 
-class UserResponse(SQLModel):
-    """Schema para respuestas de login exitoso"""
-    user: UserRead
-    token_type: str = "bearer"
-
 # === SCHEMAS ADICIONALES ===
-
-class UserPublic(SQLModel):
-    """Schema para información pública del usuario (perfiles, comentarios, etc.)"""
-    id: int
-    username: str
-    name: str
-    last_name: str
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 class UserAdmin(UserRead):
     """Schema con información adicional para administradores"""
+    id: UUID4
+    username: str
+    name: str
+    last_name: str
     failed_login_attempts: int
-    password_hash: str  # Solo para admins
+    password_hash: str
     
     class Config:
         from_attributes = True
