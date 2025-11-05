@@ -5,6 +5,9 @@
 > PLEASE REFER TO THE [NEW REPOSITORY](https://github.com/dsalazarCazanhas/ecommerce-api/tree/dev-migrate)
 
 ![Status](https://img.shields.io/badge/🚧_status-development-orange?style=flat-square)
+
+---
+
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-SQLModel-blue)
