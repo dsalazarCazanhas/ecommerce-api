@@ -1,3 +1,4 @@
+# src/models/users.py
 from sqlmodel import Relationship, SQLModel, Field
 from pydantic import EmailStr, field_validator, UUID4
 from typing import List, Optional
@@ -20,7 +21,7 @@ class UserStatus(str, Enum):
     INACTIVE = "inactive" 
     SUSPENDED = "suspended"
 
-class UserBase(SQLModel):
+class UserBase(SQLModel, table = False):
     """Base fields for validation only"""
     name: str = Field(min_length=2, max_length=30)
     last_name: str = Field(min_length=2, max_length=30)
@@ -84,7 +85,7 @@ class User(BaseModel, UserBase, table=True):
 
 
 # === SCHEMAS PARA API ===
-class UserCreate(UserBase):
+class UserCreate(UserBase, table = False):
     """Schema for creating a user"""
     password: str = Field(
         min_length=8,
@@ -105,7 +106,7 @@ class UserCreate(UserBase):
             raise ValueError('Password must contain at least one special character')
         return v
 
-class UserRead(UserBase):
+class UserRead(UserBase, table = False):
     """Schema for reading user info"""
     id: UUID4
     created_at: datetime
@@ -115,7 +116,7 @@ class UserRead(UserBase):
     class Config:
         from_attributes = True
 
-class UserUpdate(SQLModel):
+class UserUpdate(SQLModel, table = False):
     """Schema for updating user info"""
     name: Optional[str] = Field(None, min_length=2, max_length=30)
     last_name: Optional[str] = Field(None, min_length=2, max_length=30)
@@ -132,14 +133,14 @@ class UserUpdate(SQLModel):
             raise ValueError('Name must contain only letters, spaces and hyphens')
         return v.strip().title()
 
-class UserLogin(SQLModel):
+class UserLogin(SQLModel, table = False):
     """Schema for user login"""
     username: str = Field(description="username")
     password: str = Field(min_length=1, description="User password")
 
 
 # === SCHEMAS ADICIONALES ===
-class UserAdmin(UserRead):
+class UserAdmin(UserRead, table = False):
     """Schema for admin view of user"""
     id: UUID4
     username: str

@@ -1,7 +1,8 @@
+# src/models/base.py
 from pydantic import UUID4
 from typing import Optional
 from sqlmodel import Field, SQLModel
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -14,15 +15,13 @@ When using auto-incrementing integers as primary keys, you could implicitly expo
 There is still a small possibility of collision, but it is very low.
 In most cases you can assume it won't happen, but it would be good to be prepared for it.
 """
-class BaseModel(SQLModel):
+class BaseModel(SQLModel, table = False):
     """Base Model"""
     id: Optional[UUID4] = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
         index=True
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
     updated_at: Optional[datetime] = Field(default=None)
-    
-    class Config:
-        from_attributes = True
+
