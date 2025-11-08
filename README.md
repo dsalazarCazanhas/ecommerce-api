@@ -123,17 +123,6 @@ src/
 - Stripe integration and webhooks
 - Payment state handling, refunds, and errors
 
-### Stage 7: Advanced Features
-
-- Email notifications
-- Redis caching and performance optimization
-- Reviews / ratings and analytics
-
-### Stage 8: Testing & Documentation
-
-- Unit and integration tests
-- Final documentation and cleanup
-
 ---
 
 ## 🧾 Core Data Models
