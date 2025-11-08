@@ -13,6 +13,7 @@ from src.api.v1.admin import router as admin_router
 from src.api.v1.public import router as public_router
 from src.api.v1.products import router as products_router
 from src.api.v1.cart import router as cart_router
+from src.api.v1.stripe import router as stripe_router
 from src.security.auth import get_current_active_admin
 
 
@@ -22,13 +23,14 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
+
 # FastAPI app instance
 app = FastAPI(
     title="E-commerce API",
     description="API for managing e-commerce operations",
     version="0.1.0",
     debug=settings.DEBUG,
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Middlewares
@@ -40,38 +42,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.ALLOWED_HOSTS
-)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 
 if settings.ENVIRONMENT == "production":
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Routers
-app.include_router(
-    public_router,
-    prefix=f"{settings.API_V1_STR}",
-    tags=["Public"]
-)
+app.include_router(public_router, prefix=f"{settings.API_V1_STR}", tags=["Public"])
 
 app.include_router(
-    auth_router,
-    prefix=f"{settings.API_V1_STR}/auth",
-    tags=["Authentication"]
+    auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"]
 )
 
-app.include_router(
-    users_router,
-    prefix=f"{settings.API_V1_STR}/users",
-    tags=["Users"]
-)
+app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
 
 app.include_router(
     admin_router,
     prefix=f"{settings.API_V1_STR}/admin",
     tags=["Administration"],
-    dependencies=[Depends(get_current_active_admin)]
+    dependencies=[Depends(get_current_active_admin)],
 )
 
 app.include_router(
@@ -86,7 +75,11 @@ app.include_router(
     tags=["Cart"],
 )
 
+app.include_router(
+    stripe_router,
+    prefix=f"{settings.API_V1_STR}/stripe",
+    tags=["Stripe"],
+)
+
 # Static files
 app.mount("/static", StaticFiles(directory="statics", html=False), name="static")
-
-

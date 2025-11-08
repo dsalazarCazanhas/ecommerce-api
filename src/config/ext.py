@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     HOST: str = "HOST"
     PORT: int = "PORT"
     ENVIRONMENT: str = "development"
+
+    # Stripe
+    STRIPE_API_KEY: str = "STRIPE_API_KEY"
     
     class Config:
         env_file = ".env"
