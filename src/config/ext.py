@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # Cookie
     COOKIE_SECURE: bool = True
-    COOKIE_SAMESITE: str = "lax"
+    COOKIE_SAMESITE: str = "Strict"
     COOKIE_HTTPONLY: bool = True
     
     # Admin
