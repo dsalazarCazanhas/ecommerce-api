@@ -1,173 +1,107 @@
-# 🛍️ E-commerce API
+# E-commerce API
 
-> [!WARNING]
-> THIS PROJECT IS CURRENTLY BEING MIGRATED TO A NEW TECH STACK.
-> PLEASE REFER TO THE [NEW REPOSITORY](https://github.com/dsalazarCazanhas/ecommerce-api/tree/dev-migrate)
+![Status](https://img.shields.io/badge/status-development-orange?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.13%2B-blue?style=flat-square)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.135.2-009688?style=flat-square)
+![SQLModel](https://img.shields.io/badge/SQLModel-0.0.37-2E7D32?style=flat-square)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.x-336791?style=flat-square)
+![Stripe](https://img.shields.io/badge/Stripe-7.8.0-635BFF?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-![Status](https://img.shields.io/badge/🚧_status-development-orange?style=flat-square)
+FastAPI e-commerce backend with JWT auth, cart checkout, and Stripe webhook processing.
 
----
+## 5-Minute Onboarding
 
-![Python](https://img.shields.io/badge/Python-3.13-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-SQLModel-blue)
-![License](https://img.shields.io/badge/License-MIT-yellow)
-
-## [Roadmap Project](https://roadmap.sh/projects/ecommerce-api)
-
-A scalable and modular **E-commerce REST API** built with **FastAPI**, **SQLModel**, and **PostgreSQL**.  
-It provides secure authentication, product management, cart and order handling, and payment integration with **Stripe**.
-
----
-
-## ⚙️ Tech Stack
-
-### 🧠 Core Backend
-
-- **Framework:** FastAPI `^0.104.1`
-- **Database:** PostgreSQL + SQLModel `^0.0.24`
-- **Auth:** JWT (via `python-jose ^3.3.0`)
-- **Validation:** Pydantic v2 `^2.5.2`
-- **Migrations:** Alembic `^1.12.1`
-
-### 💳 External Services
-
-- **Payments:** Stripe SDK `^7.8.0`
-
-### 🧰 Development Tools
-
-- **Dependency Manager:** Poetry
-- **Testing:** pytest + pytest-asyncio
-- **Documentation:** FastAPI (Swagger / OpenAPI auto-docs)
-- **Linting & Formatting:** black + flake8 + isort
-- **Environment Management:** python-dotenv `^1.0.0`
-
----
-
-## 🚀 Quick Start
-
-### 1️⃣ Clone and install dependencies
+1. Install dependencies
 
 ```bash
-git clone https://github.com/yourusername/ecommerce-api.git
-cd ecommerce-api
-poetry install
-````
+poetry install --no-root
+```
 
-### 2️⃣ Run the development server
+1. Create local environment file
 
 ```bash
-python main.py
+cp .env.plantilla .env
 ```
 
-### 3️⃣ Environment variables
+1. Fill required values in .env
 
-Create a `.env` file in the project root with:
+- DATABASE_URL
+- SECRET_KEY, SESSION_KEY, CSRF_KEY (32+ chars)
+- STRIPE_API_KEY
+- STRIPE_WEBHOOK_SECRET
 
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/ecommerce
-HOST=127.0.0.1
-PORT=8000
-```
-
----
-
-## 🧩 Project Structure
+1. Start PostgreSQL with seeded QA data
 
 ```bash
-src/
- ├── api/                # API routers and endpoints
- ├── config/             # Engine and settings configuration
- ├── crud/               # Database operations (SQLModel CRUD)
- ├── models/             # ORM + Pydantic models
- ├── security/           # Auth and JWT handling
- ├── app.py             # Application entrypoint
- └── ...
+docker run --name ecommerce-pg --rm \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=ecommerce \
+  -v "$(pwd)/scripts/sql/seed_test_data.sql:/docker-entrypoint-initdb.d/seed.sql" \
+  -p 5432:5432 \
+  postgres:17.2
 ```
 
----
+1. Run API
 
-## 🧠 Development Roadmap
+```bash
+poetry run python main.py
+```
 
-### Stage 1: Base Configuration
+1. Open API docs
 
-- Initialize Poetry and dependencies
-- Setup FastAPI project structure
-- Configure database and migrations
-- Create base models (User, Product)
+- Swagger UI: <http://127.0.0.1:8000/docs>
+- ReDoc: <http://127.0.0.1:8000/redoc>
 
-### Stage 2: Authentication & Users
+## Current Stack
 
-- JWT authentication system
-- Full CRUD for users
-- Role management (admin / user)
+- Python >= 3.13
+- FastAPI ^0.135.2
+- SQLModel ^0.0.37 + PostgreSQL (psycopg2-binary)
+- Pydantic v2 + pydantic-settings
+- PyJWT + passlib[bcrypt]
+- Stripe SDK ^7.8.0
+- Alembic
 
-### Stage 3: Product Management
+Source of truth: pyproject.toml.
 
-- CRUD operations for products and categories
-- Search and filtering
-- Inventory and image handling
+## Tested Local Flow
 
-### Stage 4: Shopping Cart
+Validated end-to-end in local Docker environment:
 
-- Cart and CartItem models
-- Session handling and stock validation
+- login
+- add product to cart
+- cart checkout
+- Stripe hosted checkout
+- webhook processing
+- persisted final status: order=PAID, payment=SUCCEEDED
 
-### Stage 5: Orders & Checkout
+## Stripe Local Webhooks
 
-- Order and OrderItem models
-- Checkout flow and order states
+```bash
+stripe listen --forward-to http://localhost:8000/api/v1/stripe/webhook
+```
 
-### Stage 6: Payment Integration
+If Stripe CLI outputs a new whsec\_ value, update .env and restart the API.
 
-- Stripe integration and webhooks
-- Payment state handling, refunds, and errors
+## Seeded QA Credentials
 
----
+- username: qa_user_1
+- password: TestPass123!
 
-## 🧾 Core Data Models
+## Documentation
 
-| Model         | Key Fields                                                                       |
-| ------------- | -------------------------------------------------------------------------------- |
-| **User**      | id, email, password_hash, first_name, last_name, is_active, is_admin, created_at |
-| **Product**   | id, name, description, price, stock, category_id, image_url, created_at          |
-| **Category**  | id, name, description, parent_id                                                 |
-| **Cart**      | id, user_id, created_at, updated_at                                              |
-| **CartItem**  | id, cart_id, product_id, quantity, price_at_time                                 |
-| **Order**     | id, user_id, total_amount, status, shipping_address, created_at                  |
-| **OrderItem** | id, order_id, product_id, quantity, price_at_time                                |
-| **Payment**   | id, order_id, stripe_payment_intent_id, amount, status, created_at               |
+- End-to-end checkout runbook: docs/e2e-checkout-after-seed.md
+- Functional validation roadmap: docs/functional-validation-roadmap.md
+- Data model diagram notes: docs/models-diagram.md
 
----
+## Tests
 
-## 🔒 Security Considerations
+```bash
+poetry run pytest -q
+```
 
-1. **Authentication:** JWT tokens with expiration
-2. **Authorization:** Role-based middleware
-3. **Validation:** Pydantic for all inputs
-4. **Rate Limiting:** Prevent abuse
-5. **CORS:** Proper configuration
-6. **Sensitive Data:** Loaded via `.env`
-7. **SQL Injection Prevention:** SQLModel parameter binding
-8. **HTTPS:** Enforced in production
+## License
 
----
-
-## ✅ Success Metrics
-
-- [ ] Fully functional API
-- [ ] Secure authentication
-- [ ] Working Stripe integration
-- [ ] Test coverage > 80%
-- [ ] Complete documentation
-- [ ] Optimized performance
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**.
-
----
-
-> *Built with ❤️ using FastAPI and Poetry — designed for scalability, clarity, and clean architecture.*
+MIT License. See LICENSE.
