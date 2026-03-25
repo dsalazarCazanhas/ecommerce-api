@@ -1,7 +1,4 @@
-import os
-
-from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
 from src.config.engine import SessionDep
@@ -13,20 +10,6 @@ router = APIRouter()
 
 
 # === Public Endpoints ===
-@router.get("/", status_code=status.HTTP_200_OK)
-async def read_root(request: Request):
-    return {
-        "title": request.app.title,
-        "description": request.app.description,
-        "version": request.app.version,
-    }
-
-
-@router.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    return FileResponse(os.path.join("statics", "favicon.ico"))
-
-
 @router.get("/health", status_code=status.HTTP_200_OK)
 async def health_check():
     return {"status": "healthy"}
