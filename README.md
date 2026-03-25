@@ -8,7 +8,7 @@
 ![Stripe](https://img.shields.io/badge/Stripe-7.8.0-635BFF?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-FastAPI e-commerce backend with JWT auth, cart checkout, and Stripe webhook processing. A project from [Roadmaps.sh](https://roadmap.sh/projects/ecommerce-api)
+FastAPI e-commerce backend with JWT auth, cart checkout, and Stripe webhook processing.
 
 ## 5-Minute Onboarding
 
@@ -31,22 +31,24 @@ cp .env.plantilla .env
 - STRIPE_API_KEY
 - STRIPE_WEBHOOK_SECRET
 
-1. Start PostgreSQL with seeded QA data
+1. Start PostgreSQL using the way you like the most
+
+### Simple docker postgres environment with a script to populate the database
 
 ```bash
-docker run --name ecommerce-pg --rm \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=ecommerce \
-  -v "$(pwd)/scripts/sql/seed_test_data.sql:/docker-entrypoint-initdb.d/seed.sql" \
-  -p 5432:5432 \
-  postgres:17.2
+docker run --name ecommerce-pg --rm -d -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=ecommerce -v "/path/to/ecommerce-api/scripts:/scripts" -p 5432:5432 postgres
 ```
 
-1. Run API
+### Run API in order to create the database business schema
 
 ```bash
 poetry run python main.py
+```
+
+### Populate the database with the script
+
+```bash
+docker exec -i 'CONTAINER_NAME/ID' psql -U postgres -d ecommerce -f /scripts/sql/seed_test_data.sql
 ```
 
 1. Open API docs
@@ -105,3 +107,5 @@ poetry run pytest -q
 ## License
 
 MIT License. See LICENSE.
+
+> A journey to grow up from [Roadmap.sh](https://roadmap.sh/projects/ecommerce-api)
