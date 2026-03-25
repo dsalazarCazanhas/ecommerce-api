@@ -69,22 +69,22 @@ class Settings(BaseSettings):
     GZIP_MINIMUM_SIZE: int = Field(default=1000, ge=0)
     IDEMPOTENCY_RECORD_TTL_HOURS: int = Field(default=48, ge=1)
 
+    # Uvicorn
+    UVICORN_LOG_LEVEL: Literal[
+        "critical", "error", "warning", "info", "debug", "trace"
+    ] = Field(default="info")
+    UVICORN_RELOAD_IN_DEV: bool = Field(default=True)
+    UVICORN_WORKERS: int = Field(default=1, ge=1)
+    UVICORN_USE_COLORS: bool = Field(default=True)
+    UVICORN_ACCESS_LOG: bool = Field(default=True)
+    UVICORN_SERVER_HEADER: bool = Field(default=False)
+    UVICORN_DATE_HEADER: bool = Field(default=False)
+    UVICORN_PROXY_HEADERS: bool = Field(default=True)
+    UVICORN_FORWARDED_ALLOW_IPS: str = Field(default="127.0.0.1")
+    UVICORN_TIMEOUT_KEEP_ALIVE: int = Field(default=10, ge=1)
+
     # Stripe
     # STRIPE_API_KEY  — credentials your server uses to call Stripe's API
-    #                   (your server → Stripe).
-    # STRIPE_WEBHOOK_SECRET — signing secret Stripe embeds in every webhook
-    #                   delivery so you can verify the request truly came from
-    #                   Stripe (Stripe → your server).  Stripe generates this
-    #                   value and returns it once in the `secret` field when you
-    #                   create a WebhookEndpoint:
-    #
-    #                     stripe.WebhookEndpoint.create(
-    #                         enabled_events=["checkout.session.completed", ...],
-    #                         url="https://yourdomain.com/api/v1/stripe/webhook",
-    #                     )
-    #
-    #                   Copy the returned `secret` (whsec_...) here.  Without it
-    #                   any actor can forge payment events against your webhook.
     STRIPE_API_KEY: str = Field(...)
     STRIPE_WEBHOOK_SECRET: str = Field(default="")
 
