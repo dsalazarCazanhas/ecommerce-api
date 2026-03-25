@@ -1,19 +1,30 @@
-from src.models import *
-from sqlmodel import SQLModel, create_engine, Session
+from typing import Annotated
+
+from fastapi import Depends
+from sqlmodel import Session, SQLModel, create_engine
+
 from src.config.ext import settings
 
-# Engine con SQLModel
-engine = create_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_pre_ping=True
-)
+# SqlModel engine setup
+engine = create_engine(settings.DATABASE_URL, echo=settings.DEBUG, pool_pre_ping=True)
+
 
 def init_db():
-    """Inicializar base de datos"""
+    """Initialize the database and create tables.
+
+    Importing src.models here guarantees every SQLModel table class is loaded
+    into the shared metadata/mapper registry before create_all() runs.
+    This avoids partial registration bugs during real application startup.
+    """
+    import src.models  # noqa: F401
+
     SQLModel.metadata.create_all(engine)
 
+
 def get_session():
-    """Dependency para obtener sesión de DB"""
+    """Function to get the database session"""
     with Session(engine) as session:
         yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]

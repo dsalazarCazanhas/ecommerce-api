@@ -1,4 +1,5 @@
 from sqlmodel import Session, select
+
 from src.models.users import User
 
 def get_user_by_username(username: str, session: Session) -> User | None:

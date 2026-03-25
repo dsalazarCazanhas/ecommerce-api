@@ -1,28 +1,30 @@
-from pydantic import UUID4
-from typing import Optional
-from sqlmodel import Field, SQLModel
-from datetime import datetime
+from __future__ import annotations
+
 import uuid
+from datetime import datetime, timezone
+from typing import Optional
 
+# src/models/base.py
+from pydantic import UUID4
+from sqlmodel import Field, SQLModel
 
 """
-Los UUIDs previenen la filtración de información.
-Debido a que los UUIDs versión 4 son aleatorios, puedes asignar estos IDs a los usuarios de la aplicación o a otros sistemas sin exponer información sobre tu aplicación.
+UUIDs prevent information leakage.
+Because version 4 UUIDs are random, you can assign these IDs to application users or other systems without exposing information about your application.
 
-Al usar enteros auto-incrementales como claves primarias, podrías exponer implícitamente información sobre tu sistema.
+When using auto-incrementing integers as primary keys, you could implicitly expose information about your system.
 
-Aún existe una pequeña posibilidad de colisión, pero es muy baja.
-En la mayoría de los casos puedes asumir que no ocurrirá, pero sería bueno estar preparado para ello.
+There is still a small possibility of collision, but it is very low.
+In most cases you can assume it won't happen, but it would be good to be prepared for it.
 """
-class BaseModel(SQLModel):
-    """Modelo base con campos comunes"""
+
+
+class BaseModel(SQLModel, table=False):
+    """Base Model"""
+
     id: Optional[UUID4] = Field(
-        default_factory=uuid.uuid4,
-        primary_key=True,
-        index=True
+        default_factory=uuid.uuid4, primary_key=True, index=True
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    # lambda ensures datetime.now() is called per instance, not once at class load time.
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = Field(default=None)
-    
-    class Config:
-        from_attributes = True

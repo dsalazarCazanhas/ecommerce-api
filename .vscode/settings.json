@@ -1,3 +1,22 @@
 {
-    "markdown.validate.enabled": true
+  "json.schemas": [
+    {
+      "fileMatch": ["/.babelrc"],
+      "url": "https://json.schemastore.org/babelrc"
+    }
+  ],
+  "markdown.validate.enabled": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    { "file": ".github/instructions/commit_template-instructions.md" }
+  ],
+  "python-envs.defaultEnvManager": "ms-python.python:venv",
+  "python-envs.defaultPackageManager": "ms-python.python:pip"
 }
