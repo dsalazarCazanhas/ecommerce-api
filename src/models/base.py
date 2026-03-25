@@ -1,10 +1,12 @@
+from __future__ import annotations
+
+import uuid
+from datetime import datetime, timezone
+from typing import Optional
+
 # src/models/base.py
 from pydantic import UUID4
-from typing import Optional
 from sqlmodel import Field, SQLModel
-from datetime import datetime, timezone
-import uuid
-
 
 """
 UUIDs prevent information leakage.
@@ -15,13 +17,14 @@ When using auto-incrementing integers as primary keys, you could implicitly expo
 There is still a small possibility of collision, but it is very low.
 In most cases you can assume it won't happen, but it would be good to be prepared for it.
 """
-class BaseModel(SQLModel, table = False):
-    """Base Model"""
-    id: Optional[UUID4] = Field(
-        default_factory=uuid.uuid4,
-        primary_key=True,
-        index=True
-    )
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = Field(default=None)
 
+
+class BaseModel(SQLModel, table=False):
+    """Base Model"""
+
+    id: Optional[UUID4] = Field(
+        default_factory=uuid.uuid4, primary_key=True, index=True
+    )
+    # lambda ensures datetime.now() is called per instance, not once at class load time.
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = Field(default=None)

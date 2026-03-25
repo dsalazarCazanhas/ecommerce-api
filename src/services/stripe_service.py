@@ -115,33 +115,42 @@ class StripeService:
             return stripe.PaymentMethodConfiguration.list(limit=limit)
         except Exception as e:
             StripeService._handle_stripe_error(e)
-        except Exception as e:
-            StripeService._handle_stripe_error(e)
 
     # === Stripe Sessions ===
     @staticmethod
     def create_checkout_session(
-        self,
         line_items: list,
         success_url: str,
         cancel_url: str,
         mode: str = "payment",
-        payment_method_types: list = ["card"],
+        payment_method_types: list | None = None,
+        metadata: Dict[str, str] | None = None,
+        client_reference_id: str | None = None,
+        idempotency_key: str | None = None,
     ) -> Dict[str, Any]:
         try:
-            session = stripe.checkout.Session.create(
-                payment_method_types=payment_method_types,
-                mode=mode,
-                line_items=line_items,
-                success_url=success_url,
-                cancel_url=cancel_url,
-            )
+            payload: Dict[str, Any] = {
+                "payment_method_types": payment_method_types or ["card"],
+                "mode": mode,
+                "line_items": line_items,
+                "success_url": success_url,
+                "cancel_url": cancel_url,
+            }
+            if metadata:
+                payload["metadata"] = metadata
+                payload["payment_intent_data"] = {"metadata": metadata}
+            if client_reference_id:
+                payload["client_reference_id"] = client_reference_id
+            if idempotency_key:
+                payload["idempotency_key"] = idempotency_key
+
+            session = stripe.checkout.Session.create(**payload)
             return session
         except Exception as e:
             StripeService._handle_stripe_error(e)
 
     @staticmethod
-    def update_checkout_session(self, session_id: str, **kwargs) -> Dict[str, Any]:
+    def update_checkout_session(session_id: str, **kwargs) -> Dict[str, Any]:
         try:
             session = stripe.checkout.Session.modify(session_id, **kwargs)
             return session
@@ -149,7 +158,7 @@ class StripeService:
             StripeService._handle_stripe_error(e)
 
     @staticmethod
-    def retrieve_checkout_session(self, session_id: str) -> Dict[str, Any]:
+    def retrieve_checkout_session(session_id: str) -> Dict[str, Any]:
         try:
             session = stripe.checkout.Session.retrieve(session_id)
             return session
@@ -157,7 +166,7 @@ class StripeService:
             StripeService._handle_stripe_error(e)
 
     @staticmethod
-    def retrieve_line_item(self, session_id: str, line_item_id: str) -> Dict[str, Any]:
+    def retrieve_line_item(session_id: str, line_item_id: str) -> Dict[str, Any]:
         try:
             line_item = stripe.checkout.Session.list_line_items(
                 session_id, limit=1, starting_after=line_item_id
@@ -167,7 +176,7 @@ class StripeService:
             StripeService._handle_stripe_error(e)
 
     @staticmethod
-    def list_all_checkout_sessions(self, limit: int = 10) -> Dict[str, Any]:
+    def list_all_checkout_sessions(limit: int = 10) -> Dict[str, Any]:
         try:
             sessions = stripe.checkout.Session.list(limit=limit)
             return sessions
@@ -175,7 +184,7 @@ class StripeService:
             StripeService._handle_stripe_error(e)
 
     @staticmethod
-    def expire_checkout_session(self, session_id: str) -> Dict[str, Any]:
+    def expire_checkout_session(session_id: str) -> Dict[str, Any]:
         try:
             session = stripe.checkout.Session.expire(session_id)
             return session
