@@ -8,7 +8,7 @@
 ![Stripe](https://img.shields.io/badge/Stripe-7.8.0-635BFF?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-FastAPI e-commerce backend with JWT auth, cart checkout, and Stripe webhook processing.
+FastAPI e-commerce backend with JWT auth, cart checkout, and Stripe webhook processing. A project from [Roadmaps.sh](https://roadmap.sh/projects/ecommerce-api)
 
 ## 5-Minute Onboarding
 
