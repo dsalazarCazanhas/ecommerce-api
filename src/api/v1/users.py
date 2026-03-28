@@ -7,11 +7,11 @@ from src.crud import users_crud
 from src.models.users import User, UserRead, UserUpdate
 from src.security.auth import get_current_user
 
-router = APIRouter()
+users_router = APIRouter()
 
 
 # === Authenticated ===
-@router.get(
+@users_router.get(
     "/me",
     response_model=UserRead,
     summary="Get current user",
@@ -22,7 +22,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return UserRead.model_validate(current_user)
 
 
-@router.patch(
+@users_router.patch(
     "/me",
     response_model=UserRead,
     summary="Update current user",

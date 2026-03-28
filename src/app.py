@@ -5,13 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from src.api.v1.admin import router as admin_router
-from src.api.v1.auth import router as auth_router
-from src.api.v1.cart import router as cart_router
-from src.api.v1.products import router as products_router
-from src.api.v1.public import router as public_router
-from src.api.v1.stripe import router as stripe_router
-from src.api.v1.users import router as users_router
+from src.api.v1.admin import admin_router
+from src.api.v1.auth import auth_router
+from src.api.v1.cart import cart_router
+from src.api.v1.products import products_router
+from src.api.v1.public import public_router
+from src.api.v1.stripe import stripe_router
+from src.api.v1.users import users_router
 from src.config.engine import Session, engine, init_db
 from src.config.ext import settings
 from src.crud import idempotency_crud

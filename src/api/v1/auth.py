@@ -11,7 +11,7 @@ from src.models.users import UserLogin, UserRead, UserStatus
 from src.security.auth import RefreshClaims, get_refresh_token_claims
 from src.security.creds import security
 
-router = APIRouter()
+auth_router = APIRouter()
 
 # Used to keep login timing similar for existing and non-existing users.
 DUMMY_PASSWORD_HASH = security.hash_password("dummy-password-not-used")
@@ -87,7 +87,7 @@ def _clear_auth_cookies(response: Response) -> None:
     )
 
 
-@router.post(
+@auth_router.post(
     "/login",
     response_model=UserRead,
     summary="User Login",
@@ -175,7 +175,7 @@ async def login(
     return UserRead.model_validate(user)
 
 
-@router.post("/refresh", summary="Refresh Token", status_code=status.HTTP_200_OK)
+@auth_router.post("/refresh", summary="Refresh Token", status_code=status.HTTP_200_OK)
 async def refresh_token(
     response: Response,
     session: SessionDep,
@@ -257,7 +257,7 @@ async def refresh_token(
     return {"message": "Token refreshed"}
 
 
-@router.post("/logout", summary="User Logout", status_code=status.HTTP_200_OK)
+@auth_router.post("/logout", summary="User Logout", status_code=status.HTTP_200_OK)
 async def logout(request: Request, response: Response, session: SessionDep):
     """
     Close user session.

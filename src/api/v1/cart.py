@@ -15,7 +15,7 @@ from src.models.products import Product
 from src.models.users import User, UserRead
 from src.security.auth import get_current_active_admin, get_current_user
 
-router = APIRouter()
+cart_router = APIRouter()
 
 IDEMPOTENCY_SCOPE_CHECKOUT = "cart_checkout"
 
@@ -51,7 +51,7 @@ def _checkout_request_hash() -> str:
     return hashlib.sha256(b"{}").hexdigest()
 
 
-@router.get("/", response_model=Cart, status_code=status.HTTP_200_OK)
+@cart_router.get("/", response_model=Cart, status_code=status.HTTP_200_OK)
 def get_cart(session: SessionDep, current_user: User = Depends(get_current_user)):
     """
     Retrieve the current user's active cart.
@@ -60,7 +60,7 @@ def get_cart(session: SessionDep, current_user: User = Depends(get_current_user)
     return cart_crud.get_active_cart(session, current_user.id)
 
 
-@router.post("/add", response_model=Cart, status_code=status.HTTP_200_OK)
+@cart_router.post("/add", response_model=Cart, status_code=status.HTTP_200_OK)
 def add_to_cart(
     product_id: UUID4,
     session: SessionDep,
@@ -82,7 +82,7 @@ def add_to_cart(
     return cart
 
 
-@router.delete("/item/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@cart_router.delete("/item/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_item(
     item_id: UUID4, session: SessionDep, current_user: User = Depends(get_current_user)
 ):
@@ -96,7 +96,7 @@ def remove_item(
         raise HTTPException(status_code=403, detail="Not authorized")
 
 
-@router.post(
+@cart_router.post(
     "/checkout", response_model=CheckoutSummary, status_code=status.HTTP_200_OK
 )
 def checkout_cart(
@@ -204,7 +204,7 @@ def checkout_cart(
     return summary
 
 
-@router.get("/admin/all", response_model=list[Cart], status_code=status.HTTP_200_OK)
+@cart_router.get("/admin/all", response_model=list[Cart], status_code=status.HTTP_200_OK)
 def list_carts(session: SessionDep, _: User = Depends(get_current_active_admin)):
     """
     List all carts (admin only).
@@ -212,7 +212,7 @@ def list_carts(session: SessionDep, _: User = Depends(get_current_active_admin))
     return cart_crud.list_all_carts(session)
 
 
-@router.get("/me/items", status_code=status.HTTP_200_OK)
+@cart_router.get("/me/items", status_code=status.HTTP_200_OK)
 def list_cart_items(
     session: SessionDep, current_user: UserRead = Depends(get_current_user)
 ):

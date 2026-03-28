@@ -6,16 +6,16 @@ from src.crud import users_crud
 from src.models.users import User, UserCreate, UserRead
 from src.security.creds import security
 
-router = APIRouter()
+public_router = APIRouter()
 
 
 # === Public Endpoints ===
-@router.get("/health", status_code=status.HTTP_200_OK)
+@public_router.get("/health", status_code=status.HTTP_200_OK)
 async def health_check():
     return {"status": "healthy"}
 
 
-@router.post(
+@public_router.post(
     "/register",
     response_model=UserRead,
     summary="Register new user",

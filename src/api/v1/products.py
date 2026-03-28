@@ -9,16 +9,16 @@ from src.models.products import Product, ProductBase, ProductRead, ProductUpdate
 from src.models.users import User
 from src.security.auth import get_current_active_admin
 
-router = APIRouter()
+products_router = APIRouter()
 
 
-@router.get("/", summary="Get all products", status_code=status.HTTP_200_OK)
+@products_router.get("/", summary="Get all products", status_code=status.HTTP_200_OK)
 def get_all_products(session: SessionDep):
     """Get all products"""
     return products_crud.get_products(session=session)
 
 
-@router.get(
+@products_router.get(
     "/{product_id}",
     response_model=Product,
     summary="Get product by ID",
@@ -32,7 +32,7 @@ def get_product_by_id(product_id: UUID4, session: SessionDep) -> Product:
     return product
 
 
-@router.post(
+@products_router.post(
     "/register",
     response_model=ProductRead,
     summary="Register new product",
@@ -52,7 +52,7 @@ def register_new_product(
     return products_crud.create_product(product_data=product_data, session=session)
 
 
-@router.patch(
+@products_router.patch(
     "/{product_id}",
     response_model=ProductRead,
     summary="Update product by ID",
@@ -90,7 +90,7 @@ def update_product(
     return products_crud.update_product(product=product, session=session)
 
 
-@router.delete(
+@products_router.delete(
     "/{product_id}",
     summary="Delete product by ID",
     status_code=status.HTTP_204_NO_CONTENT,

@@ -5,11 +5,11 @@ from src.crud import users_crud
 from src.models.users import User, UserAdmin, UserUpdate
 from src.security.auth import get_current_user
 
-router = APIRouter()
+admin_router = APIRouter()
 
 
 # === Authenticated as Admin ===
-@router.get(
+@admin_router.get(
     "/profile/{username}",
     response_model=UserAdmin,
     summary="Get user profile as admin",
@@ -29,7 +29,7 @@ async def get_user_profile_as_admin(
     return UserAdmin.model_validate(user)
 
 
-@router.delete(
+@admin_router.delete(
     "/delete/{username}",
     summary="Delete user",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -56,7 +56,7 @@ async def delete_user(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.patch(
+@admin_router.patch(
     "/profile/{username}",
     response_model=UserAdmin,
     summary="Update user as admin",

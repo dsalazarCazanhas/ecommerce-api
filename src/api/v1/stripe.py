@@ -19,7 +19,7 @@ from src.models.users import User
 from src.security.auth import get_current_active_admin, get_current_user
 from src.services.stripe_service import StripeService
 
-router = APIRouter()
+stripe_router = APIRouter()
 
 IDEMPOTENCY_SCOPE_STRIPE_CHECKOUT = "stripe_checkout"
 
@@ -252,7 +252,7 @@ def _apply_refund_event(db: SessionDep, payload: dict) -> None:
 
 
 # === ROUTES ===
-@router.post("/checkout", summary="Create Stripe checkout session")
+@stripe_router.post("/checkout", summary="Create Stripe checkout session")
 def create_checkout_session(
     data: CheckoutRequest,
     db: SessionDep,
@@ -385,7 +385,7 @@ def create_checkout_session(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/checkout/{session_id}", summary="Retrieve checkout session")
+@stripe_router.get("/checkout/{session_id}", summary="Retrieve checkout session")
 def get_checkout_session(session_id: str, _: User = Depends(get_current_active_admin)):
     try:
         return StripeService.retrieve_checkout_session(session_id)
@@ -393,7 +393,7 @@ def get_checkout_session(session_id: str, _: User = Depends(get_current_active_a
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/checkout", summary="List recent checkout sessions")
+@stripe_router.get("/checkout", summary="List recent checkout sessions")
 def list_checkout_sessions(
     limit: int = 10, _: User = Depends(get_current_active_admin)
 ):
@@ -403,7 +403,7 @@ def list_checkout_sessions(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/payment-method", summary="Create test payment method")
+@stripe_router.post("/payment-method", summary="Create test payment method")
 def create_payment_method(
     data: PaymentMethodRequest, _: User = Depends(get_current_active_admin)
 ):
@@ -417,7 +417,7 @@ def create_payment_method(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/payment-methods/{customer_id}", summary="List customer payment methods")
+@stripe_router.get("/payment-methods/{customer_id}", summary="List customer payment methods")
 def list_customer_payment_methods(
     customer_id: str,
     limit: int = 5,
@@ -429,7 +429,7 @@ def list_customer_payment_methods(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/webhook", status_code=status.HTTP_200_OK)
+@stripe_router.post("/webhook", status_code=status.HTTP_200_OK)
 async def stripe_webhook(request: Request, session: SessionDep):
     """Stripe webhook handler for payment events."""
     payload = await request.body()
